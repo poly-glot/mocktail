@@ -12,7 +12,7 @@ ARG TARGETARCH
 RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \
       curl xz-utils ca-certificates git \
       build-essential pkg-config \
-      libgrpc-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler \
+      libgrpc-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler libprotobuf-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN case "$TARGETARCH" in \
@@ -37,14 +37,30 @@ RUN PROTO_TMP=$(mktemp -d) \
          --proto_path="$PROTO_TMP/googleapis" \
          --proto_path=/usr/include \
          --c_out=/src/proto \
-         google/firestore/v1/firestore.proto \
-         google/firestore/v1/document.proto \
-         google/firestore/v1/query.proto \
-         google/firestore/v1/write.proto \
-         google/firestore/v1/common.proto \
-         google/rpc/status.proto \
-         google/api/http.proto \
          google/api/annotations.proto \
+         google/api/client.proto \
+         google/api/field_behavior.proto \
+         google/api/http.proto \
+         google/api/launch_stage.proto \
+         google/api/routing.proto \
+         google/firestore/v1/aggregation_result.proto \
+         google/firestore/v1/bloom_filter.proto \
+         google/firestore/v1/common.proto \
+         google/firestore/v1/document.proto \
+         google/firestore/v1/explain_stats.proto \
+         google/firestore/v1/firestore.proto \
+         google/firestore/v1/pipeline.proto \
+         google/firestore/v1/query.proto \
+         google/firestore/v1/query_profile.proto \
+         google/firestore/v1/write.proto \
+         google/protobuf/any.proto \
+         google/protobuf/descriptor.proto \
+         google/protobuf/duration.proto \
+         google/protobuf/empty.proto \
+         google/protobuf/struct.proto \
+         google/protobuf/timestamp.proto \
+         google/protobuf/wrappers.proto \
+         google/rpc/status.proto \
          google/type/latlng.proto \
     && rm -rf "$PROTO_TMP"
 
