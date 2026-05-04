@@ -16,6 +16,9 @@ import {
 } from 'firebase/firestore';
 
 const EMULATOR_FLAG = '__MOCKTAIL_USE_EMULATORS__';
+// Named Firestore database for this app. The project also hosts sibling
+// databases (hooklab, azadi) so we cannot rely on (default) — it doesn't exist.
+const FIRESTORE_DATABASE_ID = 'mocktail';
 
 interface FirebaseWindowConfig {
   __FIREBASE_API_KEY__?: string;
@@ -57,10 +60,14 @@ export class FirebaseService {
     this.app = existing ?? initializeApp(this.useEmulator ? emulatorConfig : productionConfig);
     this.auth = getAuth(this.app);
     this.db = existing
-      ? getFirestore(this.app)
+      ? getFirestore(this.app, FIRESTORE_DATABASE_ID)
       : this.useEmulator
-        ? getFirestore(this.app)
-        : initializeFirestore(this.app, { localCache: persistentLocalCache() });
+        ? getFirestore(this.app, FIRESTORE_DATABASE_ID)
+        : initializeFirestore(
+            this.app,
+            { localCache: persistentLocalCache() },
+            FIRESTORE_DATABASE_ID,
+          );
 
     if (this.useEmulator && !existing) {
       connectAuthEmulator(this.auth, 'http://localhost:9099');
