@@ -12,6 +12,14 @@
       rel="stylesheet"
     />
     <script>
+      // Production Firebase Web App config. apiKey is a public identifier per
+      // https://firebase.google.com/docs/projects/api-keys; security comes
+      // from Firestore rules + App Check, not from hiding the key.
+      window.__FIREBASE_API_KEY__ = 'AIzaSyBywd-f2cxvyWJQzOz6dIo9K_C_jXRuFzk';
+      window.__FIREBASE_AUTH_DOMAIN__ = 'fir-cloud-491613.firebaseapp.com';
+      window.__FIREBASE_PROJECT_ID__ = 'firebase-cloud-491613';
+      window.__FIREBASE_APP_ID__ = '1:563789376070:web:10ea1e842552b494f07847';
+
       // Enable emulator-backed Firebase config when served from localhost or
       // from the Firebase hosting emulator (port 5000). Also enable when we're
       // inside the Angular dev server on 4200.
