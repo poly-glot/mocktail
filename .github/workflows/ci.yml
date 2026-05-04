@@ -21,7 +21,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Lint (ESLint)
         run: npm run lint
       - name: Lint (Stylelint)
@@ -62,8 +62,8 @@ jobs:
       - name: Install Zig 0.15.2
         run: |
           set -euo pipefail
-          curl -sSL https://ziglang.org/download/0.15.2/zig-linux-x86_64-0.15.2.tar.xz | tar -xJ
-          echo "$PWD/zig-linux-x86_64-0.15.2" >> "$GITHUB_PATH"
+          curl -sSL https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz | tar -xJ
+          echo "$PWD/zig-x86_64-linux-0.15.2" >> "$GITHUB_PATH"
       - name: Install gRPC + protobuf-c
         run: |
           sudo apt-get update
