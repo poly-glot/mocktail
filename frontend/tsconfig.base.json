@@ -1,0 +1,43 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@mocktail/core": ["packages/core/src/index.ts"],
+      "@mocktail/core/testing/firebase-test-utils": [
+        "packages/core/src/testing/firebase-test-utils.ts"
+      ],
+      "@mocktail/cdk": ["packages/cdk/src/index.ts"],
+      "@mocktail/auth": ["packages/auth/src/index.ts"],
+      "@mocktail/auth/routing": ["packages/auth/src/routing.ts"],
+      "@mocktail/tenant": ["packages/tenant/src/index.ts"],
+      "@mocktail/tenant/routing": ["packages/tenant/src/routing.ts"],
+      "@mocktail/projects": ["packages/projects/src/index.ts"],
+      "@mocktail/projects/routing": ["packages/projects/src/routing.ts"],
+      "@mocktail/editor": ["packages/editor/src/index.ts"],
+      "@mocktail/editor/routing": ["packages/editor/src/routing.ts"],
+      "@mocktail/collab": ["packages/collab/src/index.ts"],
+      "@mocktail/shell": ["packages/shell/src/index.ts"],
+      "@mocktail/shell/routing": ["packages/shell/src/routing.ts"]
+    },
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "ES2022"
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  }
+}

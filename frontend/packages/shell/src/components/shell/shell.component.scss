@@ -1,0 +1,357 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--MkApp-color-bg);
+  color: var(--MkApp-color-ink);
+  font-family:
+    Lato,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  --ink: var(--MkApp-color-ink);
+  --mute: var(--MkApp-color-mute);
+  --mute-2: var(--MkApp-color-mute-2);
+  --hair: var(--MkApp-color-hair);
+  --surface: var(--MkApp-color-surface);
+  --alt: var(--MkApp-color-surface-2);
+  --display: 'Lato', system-ui, sans-serif;
+  --page-max: 1200px;
+  --gutter: 24px;
+}
+
+.app-chrome {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 80px minmax(0, 1fr);
+}
+
+// -- topbar
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: block;
+  height: auto;
+  padding: 0;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(10px);
+  border-bottom: 1px solid var(--hair);
+}
+.topbar__inner {
+  max-width: none;
+  margin: 0;
+  height: 80px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.brand .mark {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 14px;
+}
+.brand > span {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+// -- tenant switcher
+.breadcrumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-left: 12px;
+  margin-left: 4px;
+  border-left: 1px solid var(--hair);
+}
+.switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--alt);
+  border: 1px solid var(--hair);
+  cursor: pointer;
+  padding: 10px 16px;
+  border-radius: 3px;
+  font: inherit;
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+  max-width: 340px;
+}
+.switcher > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.switcher:hover {
+  border-color: var(--ink);
+  background: #fff;
+}
+.switcher .sep {
+  display: inline-flex;
+  color: var(--mute);
+  transition: color 160ms ease;
+}
+.switcher:hover .sep {
+  color: var(--ink);
+}
+.switcher:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.switcher-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 280px;
+  background: #fff;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  box-shadow: 6px 6px 0 0 rgba(10, 10, 10, 0.08);
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+  z-index: 40;
+}
+.switcher-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  font: inherit;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+  transition: background 160ms ease;
+}
+.switcher-menu button lucide-icon {
+  display: inline-flex;
+  color: var(--mute);
+}
+.switcher-menu button:hover,
+.switcher-menu button:focus-visible {
+  background: var(--alt);
+  outline: none;
+}
+.switcher-menu button.is-current {
+  background: var(--alt);
+}
+.switcher-menu button.is-current .name::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 8px;
+  background: var(--ink);
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.switcher-menu .name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.switcher-menu .tag {
+  font-family: var(--MkApp-fontFamily-mono);
+  font-size: 10px;
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.switcher-div {
+  height: 1px;
+  background: var(--hair);
+  margin: 6px 0;
+}
+
+// -- actions (right)
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  font-family: var(--display);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+.actions .btn lucide-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.actions .btn.icon-only {
+  padding: 0;
+  width: 36px;
+  justify-content: center;
+  gap: 0;
+}
+.actions .btn.ghost {
+  box-shadow: none;
+}
+.actions .btn.ghost:hover {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.actions .btn.ghost:active {
+  background: var(--ink);
+  color: #fff;
+}
+.actions .btn.ghost.sm {
+  height: 36px;
+  padding: 0 10px;
+  border-color: transparent;
+  color: var(--mute);
+  background: transparent;
+}
+.actions .btn.ghost.sm.icon-only {
+  width: 36px;
+}
+.actions .btn.ghost.sm:hover {
+  color: var(--ink);
+  background: var(--alt);
+  border-color: transparent;
+}
+.actions .btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.avatars {
+  display: inline-flex;
+  margin: 0 2px;
+}
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.shell-body {
+  min-height: 0;
+  overflow: auto;
+}
+
+// -- responsive
+@media (max-width: 720px) {
+  .app-chrome {
+    grid-template-rows: 68px 1fr;
+  }
+  .topbar__inner {
+    height: 68px;
+    gap: 10px;
+    padding: 0 16px;
+  }
+  .brand > span {
+    display: none;
+  }
+  .breadcrumb {
+    padding-left: 10px;
+    margin-left: 2px;
+  }
+  .switcher {
+    padding: 8px 12px;
+    font-size: 12px;
+    max-width: 180px;
+  }
+  .actions {
+    gap: 6px;
+  }
+  .actions .btn.ghost {
+    height: 34px;
+    font-size: 11px;
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar__inner {
+    padding: 0 12px;
+    gap: 6px;
+  }
+  .breadcrumb {
+    padding-left: 8px;
+    margin-left: 0;
+  }
+  .actions .btn.ghost[data-testid='invite-btn'] {
+    display: none;
+  }
+  .actions .btn.ghost.sm {
+    padding: 0 8px;
+  }
+  .switcher {
+    max-width: 140px;
+    padding: 6px 10px;
+  }
+  .avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+  }
+}

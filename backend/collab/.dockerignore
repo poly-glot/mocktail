@@ -1,0 +1,14 @@
+.git
+.github
+.devcontainer
+.claude
+.idea
+.vscode
+zig-out
+.zig-cache
+node_modules
+public
+*.log
+README.md
+firebase.json
+.firebaserc

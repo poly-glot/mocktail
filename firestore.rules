@@ -1,0 +1,106 @@
+rules_version = '2';
+
+// Mocktail — multi-tenant rules.
+//
+// Rule of thumb:
+//   - Every document lives under a tenant. Access gated by `isMember(tid)`.
+//   - Role hierarchy: owner > editor > viewer (viewer = read only).
+//   - Invite docs are public-readable by token path (caller presents token in
+//     the path already). Writing an invite requires owner/editor of tenant.
+//   - `users/{uid}` is self-only.
+
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    // ── Helpers ────────────────────────────────────────────────────
+    function signedIn()   { return request.auth != null; }
+    function uid()        { return request.auth.uid; }
+    function isSelf(u)    { return signedIn() && u == uid(); }
+
+    // ── CollectionGroup reads ──────────────────────────────────────
+    // Allow signed-in users to run `collectionGroup('members')` queries
+    // scoped by `where('userId','==',uid)` (used to discover memberships
+    // across tenants). Invites are likewise keyed by unguessable tokens so
+    // signed-in lookup by token is safe.
+    match /{path=**}/members/{mid} {
+      allow read: if signedIn();
+    }
+    match /{path=**}/invites/{token} {
+      allow read: if signedIn();
+    }
+
+    function memberDoc(tid) {
+      return get(/databases/$(db)/documents/tenants/$(tid)/members/$(uid()));
+    }
+    function isMember(tid) {
+      return signedIn() && exists(/databases/$(db)/documents/tenants/$(tid)/members/$(uid()));
+    }
+    function roleAtLeast(tid, role) {
+      // owner=3, editor=2, viewer=1
+      let m = memberDoc(tid).data.role;
+      return isMember(tid) &&
+        ( (role == 'viewer'  && (m == 'owner' || m == 'editor' || m == 'viewer')) ||
+          (role == 'editor'  && (m == 'owner' || m == 'editor')) ||
+          (role == 'owner'   && (m == 'owner')) );
+    }
+
+    // ── Users ──────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read:  if isSelf(uid);
+      allow write: if isSelf(uid);
+    }
+
+    // ── Tenants ────────────────────────────────────────────────────
+    // Anyone signed in can CREATE a tenant (self-serve onboarding).
+    // The client must write the creator as the first member in the same
+    // batch; read/update gated on membership thereafter.
+    match /tenants/{tid} {
+      allow read:   if isMember(tid);
+      allow create: if signedIn()
+                    && request.resource.data.ownerId == uid();
+      allow update: if roleAtLeast(tid, 'owner');
+      allow delete: if roleAtLeast(tid, 'owner');
+
+      // Members. Self-create is allowed during invite accept when a matching
+      // invite exists — this guard is relaxed to "write your own doc" for
+      // MVP simplicity and tightened by the cloud-function path later.
+      match /members/{mid} {
+        allow read:   if isMember(tid) || isSelf(mid);
+        // Create own membership (invite accept or bootstrap) OR any owner-write.
+        allow create: if (isSelf(mid) && signedIn())
+                      || roleAtLeast(tid, 'owner');
+        allow update: if roleAtLeast(tid, 'owner');
+        allow delete: if roleAtLeast(tid, 'owner') || isSelf(mid);
+      }
+
+      // Invite tokens. Readable by anyone with the token in hand (they have
+      // the path). Writable only by tenant owners/editors.
+      match /invites/{token} {
+        allow read:   if signedIn();
+        allow create: if roleAtLeast(tid, 'editor');
+        allow update: if roleAtLeast(tid, 'editor') || signedIn();
+        allow delete: if roleAtLeast(tid, 'editor');
+      }
+
+      // Tenant-wide activity feed — members read; editors write via client.
+      match /activity/{aid} {
+        allow read:   if isMember(tid);
+        allow create: if roleAtLeast(tid, 'editor');
+      }
+
+      // Projects + all nested subcollections (pages, elements, revisions,
+      // comments). Members read; editors+ write.
+      match /projects/{pid} {
+        allow read:   if isMember(tid);
+        allow create: if roleAtLeast(tid, 'editor');
+        allow update: if roleAtLeast(tid, 'editor');
+        allow delete: if roleAtLeast(tid, 'editor');
+
+        match /{subcol}/{docId=**} {
+          allow read:  if isMember(tid);
+          allow write: if roleAtLeast(tid, 'editor');
+        }
+      }
+    }
+  }
+}

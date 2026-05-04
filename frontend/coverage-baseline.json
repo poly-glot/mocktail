@@ -1,0 +1,44 @@
+{
+  "packages/auth": {
+    "statements": 30.84,
+    "branches": 14.81,
+    "functions": 22.73,
+    "lines": 31.68
+  },
+  "packages/core": {
+    "statements": 83.33,
+    "branches": 90.91,
+    "functions": 77.78,
+    "lines": 83.33
+  },
+  "packages/collab": {
+    "statements": 82.73,
+    "branches": 48.59,
+    "functions": 89.19,
+    "lines": 88.08
+  },
+  "packages/tenant": {
+    "statements": 86.27,
+    "branches": 58.76,
+    "functions": 85.11,
+    "lines": 91.16
+  },
+  "packages/editor": {
+    "statements": 90,
+    "branches": 83.01,
+    "functions": 86,
+    "lines": 92
+  },
+  "packages/projects": {
+    "statements": 67,
+    "branches": 63,
+    "functions": 71.5,
+    "lines": 70.5
+  },
+  "packages/shell": {
+    "statements": 62.5,
+    "branches": 36,
+    "functions": 68.5,
+    "lines": 67
+  }
+}

@@ -1,0 +1,10 @@
+@mixin setShadowTokens() {
+  --MkApp-shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.04);
+  --MkApp-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --MkApp-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  --MkApp-zIndex-topbar: 20;
+  --MkApp-zIndex-popup: 40;
+  --MkApp-zIndex-contentOverlay: 60;
+  --MkApp-zIndex-modal: 80;
+}

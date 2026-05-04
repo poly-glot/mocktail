@@ -1,0 +1,29 @@
+@mixin setTypographyTokens() {
+  --MkApp-fontFamily-sans:
+    'Inter', 'SF Pro Text', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --MkApp-fontFamily-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --MkApp-fontFamily-display: 'Inter', 'SF Pro Display', system-ui, sans-serif;
+
+  --MkApp-fontSize-xxsmall: 10px;
+  --MkApp-fontSize-xsmall: 11px;
+  --MkApp-fontSize-small: 12px;
+  --MkApp-fontSize: 13px;
+  --MkApp-fontSize-button: 12px;
+  --MkApp-fontSize-heading5: 14px;
+  --MkApp-fontSize-heading4: 16px;
+  --MkApp-fontSize-heading3: 20px;
+  --MkApp-fontSize-heading2: 24px;
+  --MkApp-fontSize-heading1: 28px;
+  --MkApp-fontSize-display: 40px;
+
+  --MkApp-fontWeight: 400;
+  --MkApp-fontWeight-button: 500;
+  --MkApp-fontWeight-xxsmall: 400;
+  --MkApp-fontWeight-small: 400;
+  --MkApp-fontWeight-heading5: 500;
+  --MkApp-fontWeight-heading4: 500;
+  --MkApp-fontWeight-heading3: 600;
+  --MkApp-fontWeight-heading2: 600;
+  --MkApp-fontWeight-heading1: 600;
+  --MkApp-fontWeight-display: 600;
+}

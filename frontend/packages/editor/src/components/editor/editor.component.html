@@ -1,0 +1,592 @@
+<div
+  class="frame-app"
+  [class.left-collapsed]="collapseLeft()"
+  [class.right-collapsed]="collapseRight()"
+  [mkEditorShortcuts]="shortcutsApi"
+  (pointermove)="onCanvasPointerMove($event)"
+  (pointerup)="onCanvasPointerUp()"
+  (pointercancel)="onCanvasPointerCancel()"
+>
+  <div class="frame-main">
+    <!-- Rail -->
+    <nav class="rail" aria-label="Tools">
+      <button
+        class="ricon"
+        [class.active]="leftPanel() === 'components' && !collapseLeft()"
+        type="button"
+        title="Components"
+        aria-label="Components"
+        (click)="setLeftPanel('components')"
+        data-testid="rail-components"
+      >
+        <lucide-icon name="layout-grid" class="i-18"></lucide-icon>
+      </button>
+      <button
+        class="ricon"
+        [class.active]="leftPanel() === 'symbols' && !collapseLeft()"
+        type="button"
+        title="Layers"
+        aria-label="Layers"
+        (click)="setLeftPanel('symbols')"
+        data-testid="rail-symbols"
+      >
+        <lucide-icon name="layers" class="i-18"></lucide-icon>
+      </button>
+      <button
+        class="ricon"
+        [class.active]="leftPanel() === 'images' && !collapseLeft()"
+        type="button"
+        title="Images"
+        aria-label="Images"
+        (click)="setLeftPanel('images')"
+        data-testid="rail-images"
+      >
+        <lucide-icon name="image" class="i-18"></lucide-icon>
+      </button>
+      <button class="ricon" type="button" title="Pages" aria-label="Pages">
+        <lucide-icon name="file-text" class="i-18"></lucide-icon>
+      </button>
+      <button
+        class="ricon"
+        [class.active]="gridConfig().visible"
+        type="button"
+        title="Toggle column grid (⌘')"
+        aria-label="Toggle column grid"
+        (click)="toggleGrid()"
+        data-testid="grid-toggle"
+      >
+        <lucide-icon name="columns-3" class="i-18"></lucide-icon>
+      </button>
+      <button
+        class="ricon"
+        [class.active]="commentMode()"
+        type="button"
+        title="Comment (click canvas to pin)"
+        aria-label="Comment"
+        (click)="toggleCommentMode()"
+        data-testid="comment-tool"
+      >
+        <lucide-icon name="message-square" class="i-18"></lucide-icon>
+      </button>
+    </nav>
+
+    <!-- Components panel -->
+    @if (leftPanel() === 'components') {
+      <mt-palette
+        [collapsed]="collapseLeft()"
+        (collapseToggle)="toggleLeft()"
+        (itemClick)="onPaletteClick($event)"
+        (itemDragStart)="onPaletteDragStart($event)"
+        (itemDragEnd)="onPaletteDragEnd()"
+      ></mt-palette>
+    }
+
+    <!-- Symbols / Layers panel -->
+    @if (leftPanel() === 'symbols') {
+      <mt-layers-panel
+        [layers]="layers()"
+        [selectedId]="selectedId()"
+        [collapsed]="collapseLeft()"
+        (collapseToggle)="toggleLeft()"
+        (layerSelect)="selectElement($event)"
+        (lockToggle)="toggleLock($event)"
+        (reorder)="onLayerReorder($event)"
+      ></mt-layers-panel>
+    }
+
+    <!-- Image library panel -->
+    @if (leftPanel() === 'images') {
+      <mt-image-library-panel
+        [collapsed]="collapseLeft()"
+        (collapseToggle)="toggleLeft()"
+      ></mt-image-library-panel>
+    }
+
+    <!-- Expand-left rail (shown when collapsed) -->
+    @if (collapseLeft()) {
+      <button
+        type="button"
+        class="expand-tab left"
+        (click)="toggleLeft()"
+        title="Expand components (⌘\)"
+        aria-label="Expand components panel"
+        data-testid="expand-left"
+      >
+        <lucide-icon name="panel-left-open" class="i-16"></lucide-icon>
+      </button>
+    }
+
+    <!-- Canvas -->
+    <div
+      class="canvas-wrap"
+      #canvasEl
+      [class.commenting]="commentMode()"
+      (dragover)="onCanvasDragOver($event)"
+      (drop)="onCanvasDrop($event)"
+      (pointerdown)="onCanvasPointerDown($event)"
+      data-testid="canvas-wrap"
+    >
+      <!-- Collab presence strip -->
+      <div class="presence" data-testid="presence">
+        <div class="presence-state" [class.on]="collabConnected()">
+          <span class="dot"></span>
+          <span class="label label--no-margin mono">{{
+            collabConnected() ? 'Live' : 'Offline'
+          }}</span>
+        </div>
+        <div class="avatars" [attr.data-count]="peerCount()">
+          @for (p of peers(); track trackPeer($index, p)) {
+            <span
+              class="peer"
+              [style.background]="p.color"
+              [title]="p.name + (p.selection ? ' · editing' : '')"
+              [attr.data-active]="p.selection ? 'true' : null"
+              [attr.data-testid]="'peer-' + p.userId"
+            >
+              {{ p.name | peerInitials }}
+            </span>
+          }
+          @if (peerCount() === 0) {
+            <span class="peer solo" title="Only you">
+              <lucide-icon name="users" class="i-12"></lucide-icon>
+            </span>
+          }
+        </div>
+        <span class="peer-count mono small" aria-live="polite">
+          {{
+            peerCount() === 0 ? 'Only you' : peerCount() + (peerCount() === 1 ? ' peer' : ' peers')
+          }}
+        </span>
+      </div>
+
+      <div class="board-scroll">
+        <div
+          class="board-stage"
+          [style.width.px]="(activePage()?.width ?? 1200) * zoom()"
+          [style.height.px]="(activePage()?.height ?? 800) * zoom()"
+        >
+          <div
+            class="board"
+            #boardEl
+            [style.transform]="'scale(' + zoom() + ')'"
+            [style.width.px]="activePage()?.width ?? 1200"
+            [style.height.px]="activePage()?.height ?? 800"
+            data-testid="canvas-board"
+          >
+            <!-- Column grid overlay -->
+            <mt-grid-overlay
+              [config]="gridConfig()"
+              [pageWidth]="activePage()?.width ?? 1200"
+            ></mt-grid-overlay>
+
+            @for (e of elements(); track trackEl($index, e)) {
+              <div
+                class="el"
+                [class.is-rect]="e.type === 'rect'"
+                [class.is-circle]="e.type === 'circle'"
+                [class.is-card]="e.type === 'card'"
+                [class.is-text]="e.type === 'text'"
+                [class.is-heading]="e.type === 'heading'"
+                [class.is-link]="e.type === 'link'"
+                [class.is-button]="e.type === 'button'"
+                [class.is-btn-primary]="e.type === 'button' && buttonVariantOf(e) === 'primary'"
+                [class.is-btn-secondary]="e.type === 'button' && buttonVariantOf(e) === 'secondary'"
+                [class.is-btn-tertiary]="e.type === 'button' && buttonVariantOf(e) === 'tertiary'"
+                [class.is-input]="e.type === 'input'"
+                [class.is-image]="e.type === 'image'"
+                [class.is-icon]="e.type === 'icon'"
+                [class.is-list]="e.type === 'list'"
+                [class.is-nav]="e.type === 'nav'"
+                [class.is-phone-frame]="e.type === 'phone-frame'"
+                [class.is-divider]="e.type === 'divider'"
+                [class.is-divider-v]="e.type === 'divider' && dividerOrientation(e) === 'v'"
+                [class.is-tag]="e.type === 'tag'"
+                [class.is-checkbox]="e.type === 'checkbox'"
+                [class.is-toggle]="e.type === 'toggle'"
+                [class.is-unchecked]="
+                  (e.type === 'checkbox' || e.type === 'toggle') && !isCheckedOf(e)
+                "
+                [class.is-bar-chart]="e.type === 'bar-chart'"
+                [class.is-donut]="e.type === 'donut'"
+                [class.is-table]="e.type === 'table'"
+                [class.editing]="editingId() === e.id"
+                [class.selected]="isSelected(e.id)"
+                [class.locked]="e.locked"
+                [style.left.px]="e.x"
+                [style.top.px]="e.y"
+                [style.width.px]="e.w"
+                [style.height.px]="e.h"
+                [style.z-index]="e.zIndex"
+                [style.transform]="e | transformFor"
+                [style.color]="
+                  (isTextual(e.type) || e.type === 'list') && !hasBackground(e.type)
+                    ? e.color || null
+                    : null
+                "
+                [style.background-color]="e.type === 'circle' ? e.color || null : null"
+                [style.border-style]="hasBorder(e.type) ? (e | borderStyle) : null"
+                [style.border-color]="hasBorder(e.type) ? e.color || null : null"
+                [style.font-size.px]="
+                  e.type === 'heading'
+                    ? (e.level | headingFontSize)
+                    : hasFontSize(e.type)
+                      ? (e | fontSizePx)
+                      : null
+                "
+                (pointerdown)="onElementPointerDown($event, e)"
+                (dblclick)="onInlineEditDblClick($event, e)"
+                (contextmenu)="openContextMenu($event, e)"
+                [attr.data-testid]="'el-' + e.id"
+                [attr.data-perf-id]="e.id"
+              >
+                @switch (e.type) {
+                  @case ('button') {
+                    <mt-el-button [el]="e"></mt-el-button>
+                  }
+                  @case ('input') {
+                    <span class="input-text">{{ e.text || 'Placeholder' }}</span>
+                  }
+                  @case ('heading') {
+                    <mt-el-heading [el]="e"></mt-el-heading>
+                  }
+                  @case ('text') {
+                    <mt-el-text [el]="e"></mt-el-text>
+                  }
+                  @case ('link') {
+                    <mt-el-link [el]="e"></mt-el-link>
+                  }
+                  @case ('divider') {
+                    <mt-el-divider [el]="e"></mt-el-divider>
+                  }
+                  @case ('tag') {
+                    <mt-el-tag [el]="e"></mt-el-tag>
+                  }
+                  @case ('card') {
+                    <mt-el-card [el]="e"></mt-el-card>
+                  }
+                  @case ('bar-chart') {
+                    <mt-el-bar-chart></mt-el-bar-chart>
+                  }
+                  @case ('donut') {
+                    <mt-el-donut></mt-el-donut>
+                  }
+                  @case ('table') {
+                    <mt-el-table></mt-el-table>
+                  }
+                  @case ('nav') {
+                    <div class="el-nav">
+                      <span class="brand mono">{{ e.text || 'Logo' }}</span>
+                      <span>Home</span><span>Features</span><span>Pricing</span>
+                      <span class="spacer"></span>
+                      <span class="login">Log in</span>
+                    </div>
+                  }
+                  @case ('checkbox') {
+                    <mt-el-checkbox></mt-el-checkbox>
+                  }
+                  @case ('toggle') {
+                    <mt-el-toggle></mt-el-toggle>
+                  }
+                  @case ('phone-frame') {
+                    <mt-el-phone-frame></mt-el-phone-frame>
+                  }
+                  @case ('image') {
+                    <mt-el-image [el]="e"></mt-el-image>
+                  }
+                  @case ('icon') {
+                    <mt-el-icon [el]="e"></mt-el-icon>
+                  }
+                  @case ('list') {
+                    <mt-el-list [el]="e"></mt-el-list>
+                  }
+                  @default {}
+                }
+
+                <!-- Transform handles on the selected element -->
+                @if (selectedId() === e.id && !e.locked && selectionCount() === 1) {
+                  <span
+                    class="rot-handle"
+                    (pointerdown)="onRotateHandlePointerDown($event, e)"
+                    title="Drag to rotate · hold Shift to snap 15°"
+                    data-testid="rot-handle"
+                  >
+                    <lucide-icon name="rotate-cw" class="i-12 i--block"></lucide-icon>
+                  </span>
+                  @for (d of handleDirsFor(e); track d) {
+                    <span
+                      class="handle"
+                      [attr.data-dir]="d"
+                      (pointerdown)="onHandlePointerDown($event, $any(d), e)"
+                      [attr.data-testid]="'handle-' + d"
+                    ></span>
+                  }
+                }
+              </div>
+            }
+
+            <!-- Marquee selection rectangle -->
+            @if (marqueeRect(); as m) {
+              <div
+                class="marquee-rect"
+                [style.left.px]="m.x"
+                [style.top.px]="m.y"
+                [style.width.px]="m.w"
+                [style.height.px]="m.h"
+                data-testid="marquee-rect"
+              ></div>
+            }
+
+            <!-- Alignment guides during drag -->
+            @for (g of dragGuides(); track $index) {
+              @if (g.orientation === 'v') {
+                <div
+                  class="guide vertical"
+                  [style.left.px]="g.pos"
+                  [style.top.px]="g.start"
+                  [style.height.px]="g.end - g.start"
+                  data-testid="guide-v"
+                ></div>
+              } @else {
+                <div
+                  class="guide horizontal"
+                  [style.top.px]="g.pos"
+                  [style.left.px]="g.start"
+                  [style.width.px]="g.end - g.start"
+                  data-testid="guide-h"
+                ></div>
+              }
+            }
+
+            <!-- Remote cursors -->
+            @for (c of cursorsList(); track trackCursor($index, c)) {
+              <div
+                class="remote-cursor"
+                [style.transform]="'translate(' + c.x + 'px,' + c.y + 'px)'"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                  <path d="M1 1 L1 13 L5 10 L7.5 15 L9 14 L6.5 9 L12 9 Z" [attr.fill]="c.color" />
+                </svg>
+                <span class="cursor-label" [style.background]="c.color">{{ c.name }}</span>
+              </div>
+            }
+
+            <!-- Comment pins -->
+            @for (cm of pageComments(); let i = $index; track cm.id) {
+              <div
+                class="comment-pin"
+                [class.open]="openCommentId() === cm.id"
+                [class.resolved]="cm.resolved"
+                [style.left.px]="cm.x ?? 40"
+                [style.top.px]="cm.y ?? 40"
+                [attr.data-testid]="'comment-pin-' + cm.id"
+              >
+                <button
+                  type="button"
+                  class="marker"
+                  (pointerdown)="$event.stopPropagation()"
+                  (click)="togglePin(cm.id); $event.stopPropagation()"
+                >
+                  {{ i + 1 }}
+                </button>
+                <div class="bubble" (pointerdown)="$event.stopPropagation()">
+                  <div class="author">
+                    {{ cm.authorName }}
+                    <span class="t">now</span>
+                  </div>
+                  <div>{{ cm.text }}</div>
+                  <div class="actions">
+                    <button
+                      type="button"
+                      (click)="resolveComment(cm.id)"
+                      data-testid="comment-resolve"
+                    >
+                      Resolve
+                    </button>
+                    <button type="button" (click)="togglePin(cm.id)">Close</button>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Comment draft -->
+            @if (draftComment(); as d) {
+              <div
+                class="comment-draft"
+                [style.left.px]="d.x"
+                [style.top.px]="d.y"
+                (pointerdown)="$event.stopPropagation()"
+                data-testid="comment-draft"
+              >
+                <textarea
+                  placeholder="Write a comment…"
+                  [value]="d.text"
+                  (input)="onDraftInput($any($event.target).value)"
+                  data-testid="comment-draft-input"
+                ></textarea>
+                <div class="draft-actions">
+                  <button type="button" class="btn ghost sm" (click)="cancelDraft()">Cancel</button>
+                  <button
+                    type="button"
+                    class="btn primary sm"
+                    (click)="saveDraft()"
+                    data-testid="comment-draft-save"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="page-tabs">
+        @for (pg of pages(); track pg.id) {
+          <div class="page-tab-wrap" [class.has-del]="pages().length > 1">
+            <button
+              type="button"
+              class="page-tab"
+              [class.on]="activePageId() === pg.id"
+              (click)="setActivePage(pg.id)"
+              [attr.data-testid]="'page-' + pg.id"
+            >
+              <span class="num">{{ ($index + 1).toString().padStart(2, '0') }}</span>
+              {{ pg.name }}
+            </button>
+            @if (pages().length > 1) {
+              <button
+                type="button"
+                class="page-del"
+                (click)="requestDeletePage(pg.id, $event)"
+                [attr.data-testid]="'delete-page-' + pg.id"
+                [title]="'Delete ' + pg.name"
+                [attr.aria-label]="'Delete ' + pg.name"
+              >
+                <lucide-icon name="x" class="i-12 i--block"></lucide-icon>
+              </button>
+            }
+          </div>
+        }
+        <button type="button" class="page-tab add" (click)="addPage()" data-testid="add-page">
+          + Add page
+        </button>
+      </div>
+
+      <div class="zoom-chip" data-testid="zoom-chip">
+        <button type="button" class="btn sm" (click)="zoomOut()" data-testid="zoom-out">
+          <span>−</span>
+        </button>
+        <button
+          type="button"
+          class="btn sm mono"
+          [class.active]="autoFitZoom()"
+          [title]="autoFitZoom() ? 'Fit to screen · click to disable' : 'Click to fit to screen'"
+          (click)="toggleZoomFit()"
+          data-testid="zoom-fit"
+        >
+          {{ zoomPct() }}
+        </button>
+        <button type="button" class="btn sm" (click)="zoomIn()" data-testid="zoom-in">
+          <span>+</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Expand-right rail (shown when collapsed) -->
+    @if (collapseRight()) {
+      <button
+        type="button"
+        class="expand-tab right"
+        (click)="toggleRight()"
+        title="Expand inspector (⌘])"
+        aria-label="Expand inspector panel"
+        data-testid="expand-right"
+      >
+        <lucide-icon name="panel-right-open" class="i-16"></lucide-icon>
+      </button>
+    }
+
+    <!-- Inspector -->
+    <mt-inspector-panel
+      [selected]="selected()"
+      [gridConfig]="gridConfig()"
+      [collapsed]="collapseRight()"
+    ></mt-inspector-panel>
+  </div>
+
+  <!-- AI bar -->
+  <form class="ai-bar" (submit)="onAiSubmit($event)">
+    <div style="display: grid; place-items: center">
+      <div class="ai-star" [class.pulse]="aiBusy()">
+        <lucide-icon name="sparkles" class="i-16"></lucide-icon>
+      </div>
+    </div>
+    <div class="ai-input">
+      <span class="prefix">ask</span>
+      <input
+        placeholder="Describe a screen — “dashboard with KPIs and bar chart”"
+        [ngModel]="aiPrompt()"
+        (ngModelChange)="aiPrompt.set($event)"
+        name="aiPrompt"
+        data-testid="ai-prompt"
+      />
+      @if (aiNotes(); as n) {
+        <span class="mono tiny mute" title="{{ n }}">· {{ aiSource() }}</span>
+      }
+      <span class="kbd-inline">⌘ K</span>
+    </div>
+    <div class="row gap-6">
+      <button class="btn primary" [disabled]="aiBusy()" type="submit" data-testid="ai-generate">
+        {{ aiBusy() ? 'Generating…' : 'Generate' }}
+      </button>
+    </div>
+  </form>
+
+  <!-- Context menu -->
+  @if (contextMenu(); as cm) {
+    <div class="ctx-overlay" (pointerdown)="closeContextMenu()" data-testid="ctx-overlay"></div>
+    <div
+      class="ctx-menu"
+      [style.left.px]="cm.x"
+      [style.top.px]="cm.y"
+      (pointerdown)="$event.stopPropagation()"
+      data-testid="ctx-menu"
+    >
+      <button type="button" class="ctx-item" (click)="copySelected(); closeContextMenu()">
+        <span>Copy</span><span class="ctx-shortcut mono">⌘C</span>
+      </button>
+      <button
+        type="button"
+        class="ctx-item"
+        [disabled]="!canPaste()"
+        (click)="pasteClipboard(); closeContextMenu()"
+      >
+        <span>Paste</span><span class="ctx-shortcut mono">⌘V</span>
+      </button>
+      <button type="button" class="ctx-item" (click)="duplicateSelected(); closeContextMenu()">
+        <span>Duplicate</span><span class="ctx-shortcut mono">⌘D</span>
+      </button>
+      <div class="ctx-sep"></div>
+      <button type="button" class="ctx-item" (click)="bringToFront()" data-testid="ctx-front">
+        <span>Bring to front</span>
+      </button>
+      <button type="button" class="ctx-item" (click)="bringForward()">
+        <span>Bring forward</span>
+      </button>
+      <button type="button" class="ctx-item" (click)="sendBackward()">
+        <span>Send backward</span>
+      </button>
+      <button type="button" class="ctx-item" (click)="sendToBack()" data-testid="ctx-back">
+        <span>Send to back</span>
+      </button>
+      <div class="ctx-sep"></div>
+      <button type="button" class="ctx-item" (click)="toggleLock()" data-testid="ctx-lock">
+        <span>{{ selected()?.locked ? 'Unlock' : 'Lock' }}</span>
+      </button>
+      <div class="ctx-sep"></div>
+      <button type="button" class="ctx-item danger" (click)="deleteSelected(); closeContextMenu()">
+        <span>Delete</span><span class="ctx-shortcut mono">Del</span>
+      </button>
+    </div>
+  }
+</div>

@@ -1,0 +1,85 @@
+<div class="icon-picker">
+  <button
+    type="button"
+    class="picker-trigger"
+    (click)="onOpen()"
+    [attr.aria-expanded]="open()"
+    data-testid="icon-picker-trigger"
+  >
+    <lucide-icon [name]="value() || 'smile'" class="i-18"></lucide-icon>
+    <span class="picker-name">{{ formatLabel(value() || 'smile') }}</span>
+    <lucide-icon name="search" class="i-14 picker-trigger-search"></lucide-icon>
+  </button>
+</div>
+
+@if (open()) {
+  <div class="icon-modal-backdrop" (click)="onBackdropClick($event)" role="presentation">
+    <div class="icon-modal" role="dialog" aria-modal="true" aria-labelledby="icon-modal-title">
+      <header class="icon-modal-head">
+        <div class="icon-modal-head-text">
+          <h2 class="icon-modal-title" id="icon-modal-title">Choose an icon</h2>
+          <p class="icon-modal-sub">{{ filteredNames().length }} of {{ totalCount }} icons</p>
+        </div>
+        <button
+          type="button"
+          class="icon-modal-close"
+          (click)="onClose()"
+          aria-label="Close icon picker"
+          data-testid="icon-picker-close"
+        >
+          <lucide-icon name="x" class="i-16"></lucide-icon>
+        </button>
+      </header>
+
+      <div class="icon-modal-search">
+        <lucide-icon name="search" class="i-16 icon-modal-search-icon"></lucide-icon>
+        <input
+          #searchInput
+          type="text"
+          class="icon-modal-search-input"
+          placeholder="Search {{ totalCount }} icons..."
+          [value]="query()"
+          (input)="onQueryInput($any($event.target).value)"
+          data-testid="icon-picker-search"
+        />
+        @if (query()) {
+          <button
+            type="button"
+            class="icon-modal-search-clear"
+            (click)="onQueryInput('')"
+            aria-label="Clear search"
+          >
+            <lucide-icon name="x" class="i-14"></lucide-icon>
+          </button>
+        }
+      </div>
+
+      <div class="icon-modal-body">
+        @if (filteredNames().length === 0) {
+          <div class="icon-modal-empty">
+            <lucide-icon name="search" class="i-24"></lucide-icon>
+            <p>No icons match "{{ query() }}"</p>
+          </div>
+        } @else {
+          <div class="icon-modal-grid" role="listbox">
+            @for (n of filteredNames(); track n) {
+              <button
+                type="button"
+                class="icon-card"
+                [class.active]="value() === n"
+                [title]="formatLabel(n)"
+                [attr.data-testid]="'icon-cell-' + n"
+                (click)="onPick(n)"
+              >
+                <span class="icon-card-glyph">
+                  <lucide-icon [name]="n" class="i-24"></lucide-icon>
+                </span>
+                <span class="icon-card-label">{{ formatLabel(n) }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

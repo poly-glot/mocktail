@@ -1,0 +1,99 @@
+<div class="dashboard">
+  <section class="dash-hero">
+    <div class="hero-text">
+      <p class="hero-eyebrow">Your workspace</p>
+      <h1>{{ tenant()?.name ?? 'Your team' }}</h1>
+      <p class="hero-sub">Projects, reviews, and live sessions — one workspace.</p>
+    </div>
+
+    <div class="hero-actions">
+      <label class="search">
+        <lucide-icon name="search" size="16" strokeWidth="1.8"></lucide-icon>
+        <input
+          type="search"
+          placeholder="Search projects"
+          aria-label="Search projects"
+          [value]="search()"
+          (input)="onSearchInput($any($event.target).value)"
+          data-testid="proj-search"
+        />
+      </label>
+      <button type="button" class="btn ghost" (click)="openMembers()" data-testid="members-btn">
+        <lucide-icon name="users" size="14" strokeWidth="1.8"></lucide-icon>
+        <span>Members</span>
+      </button>
+      <button
+        type="button"
+        class="btn primary"
+        [disabled]="creating()"
+        (click)="newProject()"
+        data-testid="new-project"
+      >
+        <lucide-icon name="plus" size="14" strokeWidth="2.4"></lucide-icon>
+        <span>New project</span>
+      </button>
+    </div>
+  </section>
+
+  <div class="dash-body">
+    <div class="project-grid" data-testid="project-grid">
+      @for (p of filtered(); track p.id) {
+        <article class="project-card" data-testid="project-card">
+          <a class="card-body" [routerLink]="['/t', tid(), 'p', p.id]">
+            <div class="thumb" aria-hidden="true">
+              <div class="mini-wire">
+                <div class="row"><span class="bar"></span><span class="bar thin"></span></div>
+                <div class="row">
+                  <span class="box"></span><span class="box"></span><span class="box"></span>
+                </div>
+                <div class="row"><span class="bar wide"></span></div>
+              </div>
+            </div>
+            <div class="meta">
+              <div class="name">{{ p.name }}</div>
+              <div class="sub">Updated {{ relative(p.updatedAt) }}</div>
+            </div>
+          </a>
+          <div class="card-actions">
+            <button type="button" class="btn link" (click)="rename(p)">Rename</button>
+            <button type="button" class="btn link danger" (click)="softDelete(p)">Delete</button>
+          </div>
+        </article>
+      } @empty {
+        <div class="empty" data-testid="dash-empty">
+          <p>No projects yet. Start with a prompt or drop components on a fresh canvas.</p>
+          <button type="button" class="btn primary" [disabled]="creating()" (click)="newProject()">
+            <lucide-icon name="plus" size="14" strokeWidth="2.4"></lucide-icon>
+            <span>Create your first</span>
+          </button>
+        </div>
+      }
+    </div>
+
+    <aside class="activity-feed" data-testid="activity-feed">
+      <h4>Recent activity</h4>
+      @if (activity().length > 0) {
+        <ul>
+          @for (a of activity(); track a.id) {
+            <li>
+              <span class="act-icon" aria-hidden="true">
+                <lucide-icon
+                  [name]="activityIcon(a.type)"
+                  size="12"
+                  strokeWidth="1.8"
+                ></lucide-icon>
+              </span>
+              <span>
+                <span class="act-who">{{ a.actorName }}</span
+                >{{ a.summary }}
+              </span>
+              <span class="act-when">{{ relative(a.createdAt) }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted small">No activity yet. Create a project to get started.</p>
+      }
+    </aside>
+  </div>
+</div>

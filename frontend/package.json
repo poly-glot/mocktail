@@ -1,0 +1,79 @@
+{
+  "name": "mocktail-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve --host 0.0.0.0 --proxy-config proxy.conf.json",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui --ui-host=0.0.0.0",
+    "e2e:headed": "playwright test --headed",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix && stylelint \"packages/**/*.scss\" \"src/**/*.scss\" --fix",
+    "lint:scss": "stylelint \"packages/**/*.scss\" \"src/**/*.scss\"",
+    "lint:scss:fix": "stylelint \"packages/**/*.scss\" \"src/**/*.scss\" --fix",
+    "deps:check": "madge --circular --extensions ts ./src ./packages",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify": "npm run lint && npm run lint:scss && npm run format:check && npm run typecheck && npm test -- --watch=false --code-coverage && npm run deps:check && node scripts/check-coverage.mjs",
+    "format": "prettier --write \"**/*.{ts,html,scss,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,html,scss,json,md}\"",
+    "prepare": "husky || true"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{html,json,md}": [
+      "prettier --write"
+    ],
+    "*.scss": [
+      "stylelint --fix",
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@angular/common": "^21.2.11",
+    "@angular/compiler": "^21.2.11",
+    "@angular/core": "^21.2.11",
+    "@angular/forms": "^21.2.11",
+    "@angular/platform-browser": "^21.2.11",
+    "@angular/platform-browser-dynamic": "^21.2.11",
+    "@angular/router": "^21.2.11",
+    "firebase": "^10.14.1",
+    "lucide-angular": "^1.0.0",
+    "rxjs": "~7.8.1",
+    "tslib": "^2.6.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^21.2.9",
+    "@angular/build": "^21.2.9",
+    "@angular/cli": "^21.2.9",
+    "@angular/compiler-cli": "^21.2.11",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.49.0",
+    "@types/jasmine": "^6.0.0",
+    "@types/node": "^20.0.0",
+    "angular-eslint": "^21.3.1",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
+    "jasmine-core": "^6.2.0",
+    "karma": "^6.4.4",
+    "karma-chrome-launcher": "^3.2.0",
+    "karma-coverage": "^2.2.1",
+    "karma-jasmine": "^5.1.0",
+    "karma-jasmine-html-reporter": "^2.2.0",
+    "lint-staged": "^16.4.0",
+    "madge": "^8.0.0",
+    "prettier": "^3.8.3",
+    "stylelint": "^17.8.0",
+    "stylelint-config-standard-scss": "^17.0.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.33.1"
+  }
+}

@@ -1,0 +1,63 @@
+<aside
+  class="panel layers"
+  [class.collapsed]="collapsed()"
+  [attr.aria-hidden]="collapsed() ? 'true' : null"
+  data-testid="layers-panel"
+>
+  <div class="panel-head">
+    <span>Layers</span>
+    <span style="flex: 1"></span>
+    <span class="tag mono">{{ layerCount() }}</span>
+    <button
+      type="button"
+      class="icon-btn"
+      (click)="onCollapse()"
+      title="Collapse panel (⌘\)"
+      aria-label="Collapse layers panel"
+      data-testid="collapse-left"
+    >
+      <lucide-icon name="panel-left-close" class="i-16"></lucide-icon>
+    </button>
+  </div>
+  <div class="panel-body layers-body" (dragleave)="onDragLeavePanel($event)">
+    @if (layerCount() === 0) {
+      <p class="muted small empty-hint">No layers on this page yet.</p>
+    }
+    @for (l of layers(); track l.id) {
+      <div
+        class="layer-row"
+        [class.selected]="selectedId() === l.id"
+        [class.locked]="l.locked"
+        [class.dragging]="dragLayerId() === l.id"
+        [class.drop-above]="isDropAbove(l.id)"
+        [class.drop-below]="isDropBelow(l.id)"
+        draggable="true"
+        (dragstart)="onDragStart($event, l.id)"
+        (dragover)="onDragOver($event, l.id)"
+        (dragend)="onDragEnd()"
+        (drop)="onDrop($event, l.id)"
+        (click)="onSelect(l.id)"
+        [attr.data-testid]="'layer-' + l.id"
+      >
+        <span class="layer-drag" aria-hidden="true">
+          <lucide-icon name="grip-vertical" class="i-12 i--block"></lucide-icon>
+        </span>
+        <span class="layer-icon">
+          <lucide-icon [name]="iconFor(l.type)" class="i-14 i--block"></lucide-icon>
+        </span>
+        <span class="layer-label">{{ labelFor(l) }}</span>
+        <button
+          type="button"
+          class="layer-lock"
+          [class.on]="l.locked"
+          (click)="onLockClick(l.id, $event)"
+          [title]="l.locked ? 'Unlock' : 'Lock'"
+          [attr.aria-label]="l.locked ? 'Unlock layer' : 'Lock layer'"
+          [attr.data-testid]="'layer-lock-' + l.id"
+        >
+          <lucide-icon [name]="l.locked ? 'lock' : 'unlock'" class="i-12 i--block"></lucide-icon>
+        </button>
+      </div>
+    }
+  </div>
+</aside>

@@ -1,0 +1,72 @@
+{
+  "capturedAt": "2026-05-04T10:31:46.638Z",
+  "outputName": "19.x",
+  "interactionScriptVersion": 1,
+  "samples": [
+    {
+      "sampleIndex": 0,
+      "scriptDurationMs": 43.942,
+      "taskDurationMs": 179.275,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 21.369,
+      "recalcStyleDurationMs": 5.748,
+      "longTasks": 1,
+      "frames": 112
+    },
+    {
+      "sampleIndex": 1,
+      "scriptDurationMs": 54.224,
+      "taskDurationMs": 201.026,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 27.799,
+      "recalcStyleDurationMs": 9.544,
+      "longTasks": 1,
+      "frames": 95
+    },
+    {
+      "sampleIndex": 2,
+      "scriptDurationMs": 45.764,
+      "taskDurationMs": 162.729,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 17.738,
+      "recalcStyleDurationMs": 6.158,
+      "longTasks": 1,
+      "frames": 95
+    },
+    {
+      "sampleIndex": 3,
+      "scriptDurationMs": 42.483,
+      "taskDurationMs": 149.787,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 15.966,
+      "recalcStyleDurationMs": 5.624,
+      "longTasks": 1,
+      "frames": 95
+    },
+    {
+      "sampleIndex": 4,
+      "scriptDurationMs": 46.893,
+      "taskDurationMs": 157.701,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 17.359,
+      "recalcStyleDurationMs": 5.982,
+      "longTasks": 1,
+      "frames": 94
+    }
+  ],
+  "median": {
+    "scriptDurationMs": 45.533,
+    "taskDurationMs": 166.568,
+    "layoutCount": 33,
+    "recalcStyleCount": 33,
+    "layoutDurationMs": 18.822,
+    "recalcStyleDurationMs": 5.963,
+    "longTasks": 1,
+    "frames": 95
+  }
+}

@@ -1,0 +1,13 @@
+@use 'core/theme-default' as theme;
+@use 'mixins/resets';
+@use 'mixins/components';
+@use 'editor/frame-app';
+@use 'landing/landing';
+
+:root {
+  color-scheme: light;
+  @include theme.useDefaultTheme;
+}
+
+@include resets.applyResets;
+@include components.applyComponentClasses;

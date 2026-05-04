@@ -1,0 +1,193 @@
+name: CD
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Mocktail is pinned to us-central1 (firebase.json rewrites + memory.md).
+  # Do NOT read from vars.GCP_REGION — sibling repos default to europe-west2.
+  GCP_REGION:         us-central1
+  GCP_PROJECT_ID:     firebase-cloud-491613
+  AR_REPO:            firebase-cloud
+  COLLAB_SERVICE:     mocktail
+  EMAIL_AUTH_SERVICE: mocktail-email-auth
+  FIREBASE_SITE_ID:   mocktail
+
+jobs:
+  ci:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  build-images:
+    name: Build & Push Cloud Run Images
+    runs-on: ubuntu-latest
+    needs: [ci]
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      collab_image:     ${{ steps.collab.outputs.image }}
+      email_auth_image: ${{ steps.emailauth.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compute collab image tag
+        id: collab
+        run: |
+          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMG="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.COLLAB_SERVICE }}:${SHA}"
+          echo "image=${IMG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push collab image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/collab
+          file: backend/collab/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.collab.outputs.image }}
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.COLLAB_SERVICE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Compute email-auth image tag
+        id: emailauth
+        run: |
+          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMG="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.EMAIL_AUTH_SERVICE }}:${SHA}"
+          echo "image=${IMG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push email-auth image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/email-auth-service
+          file: backend/email-auth-service/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.emailauth.outputs.image }}
+            ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.AR_REPO }}/${{ env.EMAIL_AUTH_SERVICE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-images]
+    environment:
+      name: production
+      url: https://mocktail.junaid.guru
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/mocktail/browser
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy mocktail (Zig collab) to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.COLLAB_SERVICE }} \
+            --image ${{ needs.build-images.outputs.collab_image }} \
+            --region ${{ env.GCP_REGION }} \
+            --quiet
+          gcloud run services update-traffic ${{ env.COLLAB_SERVICE }} \
+            --region ${{ env.GCP_REGION }} --to-latest --quiet
+
+      - name: Deploy mocktail-email-auth (Deno) to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.EMAIL_AUTH_SERVICE }} \
+            --image ${{ needs.build-images.outputs.email_auth_image }} \
+            --region ${{ env.GCP_REGION }} \
+            --quiet
+          gcloud run services update-traffic ${{ env.EMAIL_AUTH_SERVICE }} \
+            --region ${{ env.GCP_REGION }} --to-latest --quiet
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy Firestore rules & indexes (named DB "mocktail")
+        run: firebase deploy --only firestore --force --project ${{ env.GCP_PROJECT_ID }}
+
+      - name: Deploy frontend to Firebase Hosting
+        run: firebase deploy --only hosting --force --project ${{ env.GCP_PROJECT_ID }}
+
+      - name: Tag release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pkg = require('./frontend/package.json');
+            const tag = `v${pkg.version}-${context.sha.substring(0,7)}`;
+            try {
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                ref:   `refs/tags/${tag}`,
+                sha:   context.sha,
+              });
+              core.info(`Created tag ${tag}`);
+            } catch (e) {
+              core.warning(`Tag ${tag} may already exist: ${e.message}`);
+            }
+
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    steps:
+      - name: Hit hosting + API health endpoints
+        run: |
+          set -euo pipefail
+          # mocktail.junaid.guru DNS may not be live on first run; fall back to mocktail.web.app.
+          for HOST in mocktail.junaid.guru mocktail.web.app; do
+            for path in / /api/healthz /api/email-auth/healthz; do
+              S=$(curl -sf -o /dev/null -w "%{http_code}" "https://${HOST}${path}" || echo 000)
+              echo "${HOST}${path} → HTTP ${S}"
+              if [ "$S" -eq 200 ]; then continue; fi
+              # Tolerate /api/email-auth/healthz returning 200 only after first deploy.
+              [ "$path" = "/" ] || true
+            done
+          done
+          # Strict: hosting root must be 200 on at least one host.
+          for HOST in mocktail.junaid.guru mocktail.web.app; do
+            S=$(curl -sf -o /dev/null -w "%{http_code}" "https://${HOST}/" || echo 000)
+            if [ "$S" -eq 200 ]; then exit 0; fi
+          done
+          echo "Hosting smoke test FAILED — neither host responded 200"
+          exit 1

@@ -1,0 +1,5 @@
+@mixin setBorderTokens() {
+  --MkApp-border-hairline: 1px solid var(--MkApp-color-hair);
+  --MkApp-border-hairline-2: 1px solid var(--MkApp-color-hair-2);
+  --MkApp-border-ink: 1px solid var(--MkApp-color-ink);
+}

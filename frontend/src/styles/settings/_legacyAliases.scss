@@ -1,0 +1,30 @@
+// Back-compat aliases. Components authored against the original flat token
+// names continue to work while we migrate class-by-class to --MkApp-*.
+// TODO: remove once all component SCSS references --MkApp-* directly.
+
+@mixin setLegacyAliases() {
+  --bg: var(--MkApp-color-bg);
+  --surface: var(--MkApp-color-surface);
+  --surface-2: var(--MkApp-color-surface-2);
+  --surface-3: var(--MkApp-color-surface-3);
+  --ink: var(--MkApp-color-ink);
+  --ink-2: var(--MkApp-color-ink-2);
+  --mute: var(--MkApp-color-mute);
+  --mute-2: var(--MkApp-color-mute-2);
+  --mute-3: var(--MkApp-color-mute-3);
+  --hair: var(--MkApp-color-hair);
+  --hair-2: var(--MkApp-color-hair-2);
+  --focus: var(--MkApp-color-focus);
+
+  --font-sans: var(--MkApp-fontFamily-sans);
+  --font-mono: var(--MkApp-fontFamily-mono);
+  --font-display: var(--MkApp-fontFamily-display);
+
+  --radius-sm: var(--MkApp-radius-sm);
+  --radius: var(--MkApp-radius);
+  --radius-lg: var(--MkApp-radius-lg);
+
+  --shadow-sm: var(--MkApp-shadow-sm);
+  --shadow: var(--MkApp-shadow);
+  --shadow-lg: var(--MkApp-shadow-lg);
+}

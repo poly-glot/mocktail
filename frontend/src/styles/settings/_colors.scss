@@ -1,0 +1,24 @@
+// Color tokens — canonical palette. Component code should read these via
+// var(--MkApp-color-*) rather than hardcoding hex values.
+
+@mixin setColorTokens() {
+  --MkApp-color-bg: #ffffff;
+  --MkApp-color-surface: #ffffff;
+  --MkApp-color-surface-2: #fafafa;
+  --MkApp-color-surface-3: #f5f5f5;
+
+  --MkApp-color-ink: #0a0a0a;
+  --MkApp-color-ink-2: #171717;
+
+  --MkApp-color-mute: #525252;
+  --MkApp-color-mute-2: #737373;
+  --MkApp-color-mute-3: #a3a3a3;
+
+  --MkApp-color-hair: #e5e5e5;
+  --MkApp-color-hair-2: #f0f0f0;
+
+  --MkApp-color-focus: #0a0a0a;
+  --MkApp-color-danger: #b91c1c;
+  --MkApp-color-warn: #b45309;
+  --MkApp-color-ok: #065f46;
+}

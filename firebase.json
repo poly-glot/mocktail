@@ -1,0 +1,57 @@
+{
+  "hosting": {
+    "public": "frontend/dist/mocktail/browser",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/email-auth/**",
+        "run": {
+          "serviceId": "mocktail-email-auth",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/ai/**",
+        "run": {
+          "serviceId": "mocktail-email-auth",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "mocktail",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "database": "mocktail",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "hosting": { "port": 5000, "host": "0.0.0.0" },
+    "firestore": { "port": 8083, "host": "0.0.0.0" },
+    "auth": { "port": 9099, "host": "0.0.0.0" },
+    "ui": { "enabled": true, "port": 4000, "host": "0.0.0.0" },
+    "singleProjectMode": true
+  }
+}

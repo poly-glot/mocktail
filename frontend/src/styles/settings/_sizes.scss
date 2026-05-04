@@ -1,0 +1,21 @@
+@mixin setSizeTokens() {
+  --MkApp-spacing-1: 4px;
+  --MkApp-spacing-2: 8px;
+  --MkApp-spacing-3: 12px;
+  --MkApp-spacing-4: 16px;
+  --MkApp-spacing-5: 20px;
+  --MkApp-spacing-6: 24px;
+  --MkApp-spacing-8: 32px;
+  --MkApp-spacing-10: 40px;
+
+  --MkApp-radius-sm: 4px;
+  --MkApp-radius: 6px;
+  --MkApp-radius-lg: 10px;
+  --MkApp-radius-pill: 999px;
+
+  --MkApp-size-topbar: 48px;
+  --MkApp-size-control: 28px;
+  --MkApp-size-control-sm: 22px;
+  --MkApp-size-control-lg: 36px;
+  --MkApp-size-input: 32px;
+}
