@@ -9,14 +9,12 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Mocktail is pinned to us-central1 (firebase.json rewrites + memory.md).
-  # Do NOT read from vars.GCP_REGION — sibling repos default to europe-west2.
-  GCP_REGION:         us-central1
+  GCP_REGION:         europe-west2
   GCP_PROJECT_ID:     firebase-cloud-491613
   AR_REPO:            firebase-cloud
   COLLAB_SERVICE:     mocktail
   EMAIL_AUTH_SERVICE: mocktail-email-auth
-  FIREBASE_SITE_ID:   mocktail
+  FIREBASE_SITE_ID:   mocktail-fd0ff
 
 jobs:
   ci:
@@ -174,8 +172,8 @@ jobs:
       - name: Hit hosting + API health endpoints
         run: |
           set -euo pipefail
-          # mocktail.junaid.guru DNS may not be live on first run; fall back to mocktail.web.app.
-          for HOST in mocktail.junaid.guru mocktail.web.app; do
+          # mocktail.junaid.guru DNS may not be live on first run; fall back to mocktail-fd0ff.web.app.
+          for HOST in mocktail.junaid.guru mocktail-fd0ff.web.app; do
             for path in / /api/healthz /api/email-auth/healthz; do
               S=$(curl -sf -o /dev/null -w "%{http_code}" "https://${HOST}${path}" || echo 000)
               echo "${HOST}${path} → HTTP ${S}"
@@ -185,7 +183,7 @@ jobs:
             done
           done
           # Strict: hosting root must be 200 on at least one host.
-          for HOST in mocktail.junaid.guru mocktail.web.app; do
+          for HOST in mocktail.junaid.guru mocktail-fd0ff.web.app; do
             S=$(curl -sf -o /dev/null -w "%{http_code}" "https://${HOST}/" || echo 000)
             if [ "$S" -eq 200 ]; then exit 0; fi
           done

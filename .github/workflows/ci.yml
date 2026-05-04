@@ -21,7 +21,11 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci --legacy-peer-deps
       - name: Lint (ESLint)
         run: npm run lint
       - name: Lint (Stylelint)
@@ -30,8 +34,15 @@ jobs:
         run: npm run format:check
       - name: Typecheck
         run: npm run typecheck
-      - name: Unit tests with coverage
-        run: npm test -- --watch=false --code-coverage --browsers=ChromeHeadlessNoSandbox
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+      - name: Unit tests with coverage (Firestore + Auth emulators)
+        working-directory: .
+        run: |
+          firebase emulators:exec \
+            --project=demo-mocktail \
+            --only firestore,auth \
+            'cd frontend && npm test -- --watch=false --code-coverage --browsers=ChromeHeadlessNoSandbox'
       - name: Coverage ratchet
         run: node scripts/check-coverage.mjs
       - name: Circular deps (madge)
@@ -62,12 +73,53 @@ jobs:
       - name: Install Zig 0.15.2
         run: |
           set -euo pipefail
-          curl -sSL https://ziglang.org/download/0.15.2/zig-linux-x86_64-0.15.2.tar.xz | tar -xJ
-          echo "$PWD/zig-linux-x86_64-0.15.2" >> "$GITHUB_PATH"
+          curl -sSL https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz | tar -xJ
+          echo "$PWD/zig-x86_64-linux-0.15.2" >> "$GITHUB_PATH"
       - name: Install gRPC + protobuf-c
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgrpc-dev libprotobuf-c-dev protobuf-c-compiler
+          sudo apt-get install -y libgrpc-dev libprotobuf-c-dev protobuf-c-compiler protobuf-compiler libprotobuf-dev
+      - name: Generate Firestore proto-c sources
+        run: |
+          set -euo pipefail
+          PROTO_TMP=$(mktemp -d)
+          git clone --depth=1 --filter=blob:none --sparse \
+            https://github.com/googleapis/googleapis.git "$PROTO_TMP/googleapis"
+          (cd "$PROTO_TMP/googleapis" && git sparse-checkout set \
+            google/firestore/v1 google/rpc google/type google/api)
+          mkdir -p proto
+          # protoc-c only generates outputs for files explicitly listed; it does
+          # NOT recurse imports. build.zig consumes 25 .pb-c.c files, so list all.
+          protoc-c \
+            --proto_path="$PROTO_TMP/googleapis" \
+            --proto_path=/usr/include \
+            --c_out=proto \
+            google/api/annotations.proto \
+            google/api/client.proto \
+            google/api/field_behavior.proto \
+            google/api/http.proto \
+            google/api/launch_stage.proto \
+            google/api/routing.proto \
+            google/firestore/v1/aggregation_result.proto \
+            google/firestore/v1/bloom_filter.proto \
+            google/firestore/v1/common.proto \
+            google/firestore/v1/document.proto \
+            google/firestore/v1/explain_stats.proto \
+            google/firestore/v1/firestore.proto \
+            google/firestore/v1/pipeline.proto \
+            google/firestore/v1/query.proto \
+            google/firestore/v1/query_profile.proto \
+            google/firestore/v1/write.proto \
+            google/protobuf/any.proto \
+            google/protobuf/descriptor.proto \
+            google/protobuf/duration.proto \
+            google/protobuf/empty.proto \
+            google/protobuf/struct.proto \
+            google/protobuf/timestamp.proto \
+            google/protobuf/wrappers.proto \
+            google/rpc/status.proto \
+            google/type/latlng.proto
+          rm -rf "$PROTO_TMP"
       - name: zig build
         run: zig build
       - name: zig build test
