@@ -88,18 +88,36 @@ jobs:
           (cd "$PROTO_TMP/googleapis" && git sparse-checkout set \
             google/firestore/v1 google/rpc google/type google/api)
           mkdir -p proto
+          # protoc-c only generates outputs for files explicitly listed; it does
+          # NOT recurse imports. build.zig consumes 25 .pb-c.c files, so list all.
           protoc-c \
             --proto_path="$PROTO_TMP/googleapis" \
             --proto_path=/usr/include \
             --c_out=proto \
-            google/firestore/v1/firestore.proto \
-            google/firestore/v1/document.proto \
-            google/firestore/v1/query.proto \
-            google/firestore/v1/write.proto \
-            google/firestore/v1/common.proto \
-            google/rpc/status.proto \
-            google/api/http.proto \
             google/api/annotations.proto \
+            google/api/client.proto \
+            google/api/field_behavior.proto \
+            google/api/http.proto \
+            google/api/launch_stage.proto \
+            google/api/routing.proto \
+            google/firestore/v1/aggregation_result.proto \
+            google/firestore/v1/bloom_filter.proto \
+            google/firestore/v1/common.proto \
+            google/firestore/v1/document.proto \
+            google/firestore/v1/explain_stats.proto \
+            google/firestore/v1/firestore.proto \
+            google/firestore/v1/pipeline.proto \
+            google/firestore/v1/query.proto \
+            google/firestore/v1/query_profile.proto \
+            google/firestore/v1/write.proto \
+            google/protobuf/any.proto \
+            google/protobuf/descriptor.proto \
+            google/protobuf/duration.proto \
+            google/protobuf/empty.proto \
+            google/protobuf/struct.proto \
+            google/protobuf/timestamp.proto \
+            google/protobuf/wrappers.proto \
+            google/rpc/status.proto \
             google/type/latlng.proto
           rm -rf "$PROTO_TMP"
       - name: zig build
