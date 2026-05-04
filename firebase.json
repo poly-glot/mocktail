@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "mocktail-fd0ff",
     "public": "frontend/dist/mocktail/browser",
     "ignore": [
       "firebase.json",
@@ -11,21 +12,21 @@
         "source": "/api/email-auth/**",
         "run": {
           "serviceId": "mocktail-email-auth",
-          "region": "us-central1"
+          "region": "europe-west2"
         }
       },
       {
         "source": "/api/ai/**",
         "run": {
           "serviceId": "mocktail-email-auth",
-          "region": "us-central1"
+          "region": "europe-west2"
         }
       },
       {
         "source": "/api/**",
         "run": {
           "serviceId": "mocktail",
-          "region": "us-central1"
+          "region": "europe-west2"
         }
       },
       {
