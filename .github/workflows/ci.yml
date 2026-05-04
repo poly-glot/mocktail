@@ -30,8 +30,15 @@ jobs:
         run: npm run format:check
       - name: Typecheck
         run: npm run typecheck
-      - name: Unit tests with coverage
-        run: npm test -- --watch=false --code-coverage --browsers=ChromeHeadlessNoSandbox
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+      - name: Unit tests with coverage (Firestore + Auth emulators)
+        working-directory: .
+        run: |
+          firebase emulators:exec \
+            --project=demo-mocktail \
+            --only firestore,auth \
+            'cd frontend && npm test -- --watch=false --code-coverage --browsers=ChromeHeadlessNoSandbox'
       - name: Coverage ratchet
         run: node scripts/check-coverage.mjs
       - name: Circular deps (madge)
@@ -68,6 +75,29 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgrpc-dev libprotobuf-c-dev protobuf-c-compiler
+      - name: Generate Firestore proto-c sources
+        run: |
+          set -euo pipefail
+          PROTO_TMP=$(mktemp -d)
+          git clone --depth=1 --filter=blob:none --sparse \
+            https://github.com/googleapis/googleapis.git "$PROTO_TMP/googleapis"
+          (cd "$PROTO_TMP/googleapis" && git sparse-checkout set \
+            google/firestore/v1 google/rpc google/type google/api)
+          mkdir -p proto
+          protoc-c \
+            --proto_path="$PROTO_TMP/googleapis" \
+            --proto_path=/usr/include \
+            --c_out=proto \
+            google/firestore/v1/firestore.proto \
+            google/firestore/v1/document.proto \
+            google/firestore/v1/query.proto \
+            google/firestore/v1/write.proto \
+            google/firestore/v1/common.proto \
+            google/rpc/status.proto \
+            google/api/http.proto \
+            google/api/annotations.proto \
+            google/type/latlng.proto
+          rm -rf "$PROTO_TMP"
       - name: zig build
         run: zig build
       - name: zig build test
