@@ -1,0 +1,75 @@
+@if (top(); as cfg) {
+  <div
+    class="dlg-backdrop"
+    (click)="onBackdrop()"
+    data-testid="dialog-backdrop"
+    aria-hidden="true"
+  ></div>
+  <div
+    #card
+    class="dlg-card"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="cfg.id + '-title'"
+    [attr.aria-describedby]="cfg.message ? cfg.id + '-msg' : null"
+    [attr.data-kind]="cfg.kind"
+    [attr.data-testid]="'dialog-' + cfg.kind"
+  >
+    <form class="dlg-form" (submit)="onFormSubmit($event)" novalidate>
+      <header class="dlg-head">
+        <h2 [id]="cfg.id + '-title'" class="dlg-title">{{ cfg.title }}</h2>
+        @if (cfg.message) {
+          <p [id]="cfg.id + '-msg'" class="dlg-msg">{{ cfg.message }}</p>
+        }
+      </header>
+
+      @if (isPrompt(cfg)) {
+        <div class="dlg-field">
+          @if (cfg.inputLabel) {
+            <label class="dlg-label" [attr.for]="cfg.id + '-input'">{{ cfg.inputLabel }}</label>
+          }
+          <input
+            #promptInput
+            [id]="cfg.id + '-input'"
+            class="dlg-input"
+            type="text"
+            [attr.placeholder]="cfg.inputPlaceholder ?? null"
+            [ngModel]="inputValue()"
+            (ngModelChange)="onInputChange($event)"
+            [attr.aria-invalid]="inputError() ? 'true' : 'false'"
+            [attr.aria-describedby]="inputError() ? cfg.id + '-err' : null"
+            name="dlg-input"
+            autocomplete="off"
+            spellcheck="false"
+            data-testid="dialog-input"
+          />
+          @if (inputError(); as err) {
+            <p [id]="cfg.id + '-err'" class="dlg-err" role="alert">{{ err }}</p>
+          }
+        </div>
+      }
+
+      <footer class="dlg-actions">
+        @if (cfg.kind !== 'alert') {
+          <button
+            type="button"
+            class="dlg-btn ghost"
+            (click)="onCancel()"
+            data-testid="dialog-cancel"
+          >
+            {{ cfg.cancelLabel }}
+          </button>
+        }
+        <button
+          type="submit"
+          class="dlg-btn primary"
+          [class.danger]="cfg.destructive"
+          data-primary
+          data-testid="dialog-confirm"
+        >
+          {{ cfg.confirmLabel }}
+        </button>
+      </footer>
+    </form>
+  </div>
+}

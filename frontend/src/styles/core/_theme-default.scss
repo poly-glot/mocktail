@@ -1,0 +1,15 @@
+@use '../settings/colors';
+@use '../settings/typography';
+@use '../settings/sizes';
+@use '../settings/borders';
+@use '../settings/shadows';
+@use '../settings/legacyAliases';
+
+@mixin useDefaultTheme() {
+  @include colors.setColorTokens;
+  @include typography.setTypographyTokens;
+  @include sizes.setSizeTokens;
+  @include borders.setBorderTokens;
+  @include shadows.setShadowTokens;
+  @include legacyAliases.setLegacyAliases;
+}

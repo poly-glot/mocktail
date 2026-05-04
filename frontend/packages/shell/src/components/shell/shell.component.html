@@ -1,0 +1,74 @@
+<div class="app-chrome">
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" data-testid="brand" routerLink="/">
+        <div class="mark">M</div>
+        <span>Mocktail</span>
+      </a>
+
+      <div class="breadcrumb">
+        <button
+          #switcherBtn
+          type="button"
+          class="switcher"
+          (click)="toggleSwitcher()"
+          [attr.aria-expanded]="switcherOpen()"
+          aria-haspopup="menu"
+          aria-controls="tenant-switcher-menu"
+          data-testid="tenant-switcher"
+        >
+          <span>{{ tenantName() }}</span>
+          <lucide-icon name="chevron-down" class="sep" size="14" strokeWidth="2"></lucide-icon>
+        </button>
+        @if (switcherOpen()) {
+          <div id="tenant-switcher-menu" class="switcher-menu" role="menu" aria-label="Switch team">
+            @for (m of memberships(); track m.tenantId) {
+              <button
+                type="button"
+                role="menuitem"
+                (click)="selectTenant(m.tenantId)"
+                [class.is-current]="m.tenantId === tenants.currentTenantId()"
+              >
+                <span class="name">{{
+                  tenants.tenantsById().get(m.tenantId)?.name ?? m.tenantId
+                }}</span>
+                <span class="tag">{{ m.role }}</span>
+              </button>
+            }
+            <div class="switcher-div" role="separator"></div>
+            <button type="button" role="menuitem" (click)="createNewTenant()">
+              <lucide-icon name="plus" size="14" strokeWidth="2"></lucide-icon>
+              <span class="name">New team…</span>
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn ghost" (click)="copyInvite()" data-testid="invite-btn">
+          <lucide-icon name="plus" size="14" strokeWidth="2.2"></lucide-icon>
+          <span>Invite</span>
+        </button>
+        <div class="avatars" title="{{ user()?.email }}">
+          <div class="avatar">{{ initials() }}</div>
+        </div>
+        <button
+          type="button"
+          class="btn ghost sm icon-only"
+          (click)="logout()"
+          data-testid="logout"
+          aria-label="Log out"
+          title="Log out"
+        >
+          <lucide-icon name="log-out" size="16" strokeWidth="1.8"></lucide-icon>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell-body">
+    <router-outlet />
+  </div>
+
+  <mk-dialog-host />
+</div>

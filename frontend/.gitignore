@@ -1,0 +1,23 @@
+# Angular / Node
+/node_modules
+/dist
+/out-tsc
+/tmp
+*.tsbuildinfo
+.angular/
+
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Brainstorm session artifacts
+.superpowers/

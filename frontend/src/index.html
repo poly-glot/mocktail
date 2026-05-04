@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mocktail — AI wireframes</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Lato:wght@400;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Enable emulator-backed Firebase config when served from localhost or
+      // from the Firebase hosting emulator (port 5000). Also enable when we're
+      // inside the Angular dev server on 4200.
+      (function () {
+        var h = location.hostname;
+        var p = location.port;
+        if (
+          h === 'localhost' ||
+          h === '127.0.0.1' ||
+          h === '0.0.0.0' ||
+          p === '4200' ||
+          p === '5000'
+        ) {
+          window.__MOCKTAIL_USE_EMULATORS__ = true;
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <mk-root></mk-root>
+  </body>
+</html>

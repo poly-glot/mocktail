@@ -1,0 +1,2004 @@
+/* ── Layout grid (responsive to collapse state) ───────────────────── */
+.frame-app {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 56px;
+  height: 100%;
+  min-height: 0;
+  background: var(--canvas-bg);
+  overflow: hidden;
+}
+
+.frame-app .frame-main {
+  display: grid;
+  grid-template-columns: var(--rail-width) var(--comp-width) minmax(0, 1fr) var(--insp-width);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  transition: grid-template-columns var(--panel-transition);
+}
+.frame-app.left-collapsed .frame-main {
+  grid-template-columns: var(--rail-width) 0 1fr var(--insp-width);
+}
+.frame-app.right-collapsed .frame-main {
+  grid-template-columns: var(--rail-width) var(--comp-width) 1fr 0;
+}
+.frame-app.left-collapsed.right-collapsed .frame-main {
+  grid-template-columns: var(--rail-width) 0 1fr 0;
+}
+
+/* ── Rail ─────────────────────────────────────────────────────────── */
+.frame-app .rail {
+  width: var(--rail-width);
+  background: var(--surface);
+  border-right: 1px solid var(--hair);
+  display: grid;
+  grid-auto-flow: row;
+  align-content: start;
+  padding: 10px 0;
+  gap: 4px;
+  justify-items: center;
+}
+.frame-app .rail .ricon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: var(--mute-2);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  transition:
+    background 140ms,
+    color 140ms,
+    transform 140ms;
+}
+.frame-app .rail .ricon:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.frame-app .rail .ricon.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+.frame-app .rail .ricon:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ── Panels (components / inspector) ──────────────────────────────── */
+.frame-app .panel {
+  background: var(--surface);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  transition:
+    opacity var(--panel-transition),
+    transform var(--panel-transition);
+}
+.frame-app .panel.components,
+.frame-app .panel.layers {
+  border-right: 1px solid var(--hair);
+}
+.frame-app .panel.inspector {
+  border-left: 1px solid var(--hair);
+  border-right: 0;
+}
+.frame-app .panel.collapsed {
+  opacity: 0;
+  pointer-events: none;
+}
+.frame-app .panel.components.collapsed {
+  transform: translateX(-8px);
+}
+.frame-app .panel.inspector.collapsed {
+  transform: translateX(8px);
+}
+
+.frame-app .panel-head {
+  height: 44px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--hair);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--mute);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.frame-app .panel-body {
+  padding: 14px;
+  overflow: auto;
+}
+
+/* Icon button (panel-head collapse, etc.) */
+.frame-app .icon-btn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--mute-2);
+  cursor: pointer;
+  transition:
+    background 140ms,
+    color 140ms;
+}
+.frame-app .icon-btn:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.frame-app .icon-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ── Component palette ────────────────────────────────────────────── */
+.frame-app .search {
+  height: 34px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: var(--mute-2);
+  font-size: 12.5px;
+  margin-bottom: 6px;
+  transition:
+    border-color 140ms,
+    background 140ms;
+}
+.frame-app .search:focus-within {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+.frame-app .search input {
+  border: 0;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  color: var(--ink);
+  min-width: 0;
+  font: inherit;
+}
+
+.frame-app .cat {
+  margin-top: 16px;
+}
+.frame-app .cat:first-of-type {
+  margin-top: 10px;
+}
+.frame-app .cat h4 {
+  margin: 0 0 8px;
+  font-size: 10.5px;
+  color: var(--mute-2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+.frame-app .cgrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.frame-app .ctile {
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  height: 72px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: 10px 8px 8px;
+  background: var(--surface);
+  cursor: grab;
+  transition:
+    border-color 140ms,
+    background 140ms,
+    transform 140ms,
+    box-shadow 140ms;
+  user-select: none;
+}
+.frame-app .ctile:hover {
+  border-color: var(--ink);
+  background: var(--surface);
+}
+.frame-app .ctile:active {
+  cursor: grabbing;
+}
+.frame-app .ctile .preview {
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+}
+.frame-app .ctile .preview lucide-icon {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.6;
+}
+.frame-app .ctile .label {
+  font-size: 11px;
+  color: var(--mute);
+  text-align: center;
+  font-weight: 500;
+}
+.frame-app .ctile:hover .label {
+  color: var(--ink);
+}
+.frame-app .empty-hint {
+  margin: 12px 2px;
+  color: var(--mute-2);
+}
+
+/* ── Expand tabs (floating reveal buttons when collapsed) ─────────── */
+.frame-app .expand-tab {
+  position: absolute;
+  top: 54px;
+  width: 22px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--mute);
+  border: 1px solid var(--hair);
+  cursor: pointer;
+  z-index: 12;
+  transition:
+    background 140ms,
+    color 140ms,
+    border-color 140ms;
+}
+.frame-app .expand-tab.left {
+  left: var(--rail-width);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+}
+.frame-app .expand-tab.right {
+  right: 0;
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+}
+.frame-app .expand-tab:hover {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.frame-app .expand-tab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ── Canvas ───────────────────────────────────────────────────────── */
+.frame-app .canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, var(--canvas-grid) 1px, transparent 0) 0 0 / 18px 18px,
+    var(--canvas-bg);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+}
+.frame-app .canvas-wrap.commenting {
+  cursor: crosshair;
+}
+.frame-app .canvas-wrap .board-scroll {
+  position: relative;
+  overflow: auto;
+  display: grid;
+  place-items: start center;
+  padding: 56px 40px 80px;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.frame-app .board-stage {
+  position: relative;
+  flex: 0 0 auto;
+}
+.frame-app .board {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  box-shadow:
+    0 1px 0 rgba(10, 10, 10, 0.04),
+    0 8px 24px rgba(10, 10, 10, 0.08);
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+
+/* ── Collab presence strip ────────────────────────────────────────── */
+.frame-app .presence {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(10, 10, 10, 0.05);
+  z-index: 14;
+}
+.frame-app .presence-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 10px;
+  border-right: 1px solid var(--hair);
+}
+.frame-app .presence-state .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mute-3);
+}
+.frame-app .presence-state.on .dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+}
+.frame-app .presence-state .label {
+  font-size: 10.5px;
+  color: var(--mute);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+  line-height: 1;
+}
+.frame-app .presence-state.on .label {
+  color: var(--ink);
+}
+.frame-app .peer-count {
+  line-height: 1;
+}
+
+.frame-app .avatars {
+  display: inline-flex;
+}
+.frame-app .avatars .peer {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 0 2px var(--surface);
+  transition: transform 160ms;
+}
+.frame-app .avatars .peer + .peer {
+  margin-left: -6px;
+}
+.frame-app .avatars .peer[data-active='true'] {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px rgba(16, 163, 74, 0.35);
+}
+.frame-app .avatars .peer.solo {
+  background: var(--surface-3);
+  color: var(--mute-2);
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.frame-app .avatars .peer.solo lucide-icon {
+  width: 12px;
+  height: 12px;
+}
+.frame-app .peer-count {
+  color: var(--mute);
+  font-size: 11px;
+}
+
+/* ── Zoom chip & page tabs ────────────────────────────────────────── */
+.frame-app .zoom-chip {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(10, 10, 10, 0.05);
+  z-index: 11;
+}
+.frame-app .zoom-chip .btn {
+  height: 28px;
+  min-width: 34px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 140ms;
+}
+.frame-app .zoom-chip .btn:hover {
+  background: var(--surface-3);
+}
+.frame-app .zoom-chip .btn.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+.frame-app .zoom-chip .btn.active:hover {
+  background: var(--ink);
+}
+
+.frame-app .page-tabs {
+  position: absolute;
+  left: 20px;
+  bottom: 14px;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(10, 10, 10, 0.05);
+  z-index: 11;
+  max-width: calc(100% - 200px);
+  overflow: auto;
+}
+.frame-app .page-tab {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--mute);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 140ms,
+    color 140ms;
+}
+.frame-app .page-tab:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.frame-app .page-tab.on {
+  background: var(--ink);
+  color: var(--bg);
+}
+.frame-app .page-tab.on .num {
+  color: var(--mute-3);
+}
+.frame-app .page-tab .num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--mute-3);
+}
+.frame-app .page-tab.add {
+  color: var(--mute-2);
+  border: 1px dashed var(--hair);
+}
+.frame-app .page-tab.add:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* ── Inspector ─────────────────────────────────────────────────────── */
+.frame-app .empty-inspector {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 40px 14px 20px;
+  color: var(--mute);
+}
+.frame-app .empty-inspector lucide-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--mute-2);
+  margin-bottom: 12px;
+}
+.frame-app .empty-inspector p {
+  margin: 0 0 6px;
+  max-width: 220px;
+  line-height: 1.5;
+}
+
+.frame-app .field {
+  margin-bottom: 14px;
+}
+.frame-app .field label {
+  display: block;
+  font-size: 10.5px;
+  color: var(--mute-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.frame-app .ctrl {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink);
+  transition:
+    border-color 140ms,
+    background 140ms;
+}
+.frame-app .ctrl:focus-within {
+  border-color: var(--ink);
+}
+.frame-app .ctrl:has(input:disabled) {
+  opacity: 0.6;
+  background: var(--hair);
+  cursor: not-allowed;
+}
+.frame-app .ctrl:has(input:disabled) > .mono {
+  color: var(--mute);
+}
+.frame-app .ctrl input:disabled {
+  cursor: not-allowed;
+  color: var(--mute);
+}
+
+.inspector-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hair);
+}
+.inspector-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+.inspector-actions .danger {
+  color: var(--danger, #b91c1c);
+  border-color: color-mix(in srgb, var(--danger, #b91c1c) 40%, var(--hair));
+}
+.inspector-actions .danger:hover {
+  background: color-mix(in srgb, var(--danger, #b91c1c) 8%, var(--surface));
+  border-color: var(--danger, #b91c1c);
+}
+
+/* ── AI bar ───────────────────────────────────────────────────────── */
+.frame-app .ai-bar {
+  border-top: 1px solid var(--hair);
+  background: var(--surface);
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+}
+.frame-app .ai-star {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+}
+.frame-app .ai-star lucide-icon {
+  width: 16px;
+  height: 16px;
+}
+.frame-app .ai-star.pulse {
+  animation: aiStarPulse 1.4s ease-in-out infinite;
+}
+@keyframes aiStarPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(10, 10, 10, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(10, 10, 10, 0.08);
+  }
+}
+.frame-app .ai-input {
+  height: 40px;
+  flex: 1;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  font-size: 13px;
+  transition:
+    border-color 140ms,
+    background 140ms;
+}
+.frame-app .ai-input:focus-within {
+  border-color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.06);
+}
+.frame-app .ai-input .prefix {
+  color: var(--mute-2);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.frame-app .ai-input input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  flex: 1;
+  color: var(--ink);
+  font: inherit;
+}
+
+/* ── Responsive fallback ──────────────────────────────────────────── */
+/* Keep wide canvas on common laptop resolutions (1280/1366/1440/1600).
+ Default (>=1600) keeps spacious panels; below that we tighten. */
+@media (max-width: 1600px) {
+  mk-editor {
+    --comp-width: 240px;
+    --insp-width: 260px;
+  }
+}
+@media (max-width: 1440px) {
+  mk-editor {
+    --comp-width: 220px;
+    --insp-width: 240px;
+  }
+  .frame-app .canvas-wrap .board-scroll {
+    padding: 48px 24px 72px;
+  }
+}
+@media (max-width: 1280px) {
+  mk-editor {
+    --comp-width: 208px;
+    --insp-width: 228px;
+  }
+  .frame-app .canvas-wrap .board-scroll {
+    padding: 44px 20px 68px;
+  }
+}
+@media (max-width: 1100px) {
+  mk-editor {
+    --comp-width: 200px;
+    --insp-width: 220px;
+    --rail-width: 44px;
+  }
+}
+@media (max-width: 840px) {
+  mk-editor {
+    --comp-width: 188px;
+    --insp-width: 208px;
+  }
+  .frame-app .presence .peer-count {
+    display: none;
+  }
+}
+/* Short viewports: shrink bottom bar and panel headers for more canvas height. */
+@media (max-height: 800px) {
+  .frame-app {
+    grid-template-rows: minmax(0, 1fr) 48px;
+  }
+  .frame-app .panel-head {
+    height: 38px;
+  }
+  .frame-app .canvas-wrap .board-scroll {
+    padding-top: 40px;
+    padding-bottom: 64px;
+  }
+}
+
+/* ── Canvas element content (scoped overrides: text renders INSIDE elements) ─── */
+/* Button: text centered inside (uses parent grid/place-items:center from globals) */
+.frame-app .el.is-button .btn-text {
+  font-size: inherit;
+  font-weight: 500;
+  color: inherit;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 4px;
+  pointer-events: none;
+}
+
+/* Input: placeholder-style text, left-aligned */
+.frame-app .el.is-input .input-text {
+  color: var(--mute-2);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  pointer-events: none;
+}
+
+/* Tag: shipping-tag shape (pointed left tip with punched hole) */
+.frame-app .el.is-tag {
+  justify-content: center;
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0 10px 0 24px;
+  isolation: isolate;
+}
+.frame-app .el.is-tag .tag-shape {
+  position: absolute;
+  inset: 0;
+  background: #fcd34d;
+  clip-path: polygon(18px 0%, 100% 0%, 100% 100%, 18px 100%, 0 50%);
+  z-index: 0;
+  pointer-events: none;
+}
+.frame-app .el.is-tag .tag-hole {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg, #ffffff);
+  box-shadow: 0 0 0 1px var(--ink);
+  transform: translateY(-50%);
+  z-index: 1;
+  pointer-events: none;
+}
+.frame-app .el.is-tag.selected {
+  box-shadow: none;
+}
+.frame-app .el.is-tag.selected .tag-shape {
+  filter: drop-shadow(2px 0 0 var(--ink)) drop-shadow(-2px 0 0 var(--ink))
+    drop-shadow(0 2px 0 var(--ink)) drop-shadow(0 -2px 0 var(--ink));
+}
+.frame-app .el.is-tag .tag-text {
+  font-family: var(--font-mono);
+  font-size: inherit;
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  position: relative;
+  z-index: 2;
+}
+
+/* Heading: block text inside the box, top-left */
+.frame-app .el.is-heading .el-heading-text {
+  display: block;
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Icon element */
+.frame-app .el.is-icon {
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  gap: 4px;
+  grid-template-rows: 1fr auto;
+}
+.frame-app .el.is-icon .icon-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+.frame-app .el.is-icon .icon-glyph svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.frame-app .el.is-icon .icon-label {
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--ink);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* List element */
+.frame-app .el.is-list {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+  display: block;
+}
+.frame-app .el.is-list .el-list-body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.frame-app .el.is-list .list-item {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+.frame-app .el.is-list .list-item.level-1 {
+  padding-left: 18px;
+}
+.frame-app .el.is-list .list-item.level-2 {
+  padding-left: 36px;
+}
+.frame-app .el.is-list .bullet {
+  flex: 0 0 auto;
+  font-size: 1.1em;
+  line-height: 1;
+  color: inherit;
+}
+.frame-app .el.is-list .list-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.frame-app .el.is-list .el-list-edit {
+  display: block;
+  width: 100%;
+  height: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  overflow: auto;
+  line-height: 1.5;
+  color: inherit;
+}
+
+/* Text body */
+.frame-app .el.is-text .el-text-body {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  font-size: inherit;
+  line-height: 1.5;
+  overflow: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* Link */
+.frame-app .el.is-link {
+  display: flex;
+  align-items: center;
+  color: #1d4ed8;
+}
+.frame-app .el.is-link .el-link-text {
+  display: block;
+  width: 100%;
+  color: inherit;
+  font-size: inherit;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Divider renders a 1px line regardless of bounding box dimensions */
+.frame-app .el.is-divider {
+  background: transparent !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+/* Invisible hit-area so the thin 1px divider is easy to click/grab */
+.frame-app .el.is-divider::before {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+}
+.frame-app .el.is-divider.is-divider-v::before {
+  inset: 0 -6px;
+}
+.frame-app .el.is-divider .divider-line {
+  display: block;
+  background: transparent;
+  width: 100%;
+  height: 0;
+  border-top: 1px solid var(--ink);
+  pointer-events: none;
+}
+.frame-app .el.is-divider.is-divider-v .divider-line {
+  width: 0;
+  height: 100%;
+  border-top: 0;
+  border-left: 1px solid var(--ink);
+}
+
+/* Inline editable text inside the canvas */
+.frame-app .el .inline-editable.editing {
+  pointer-events: auto;
+  outline: none;
+  cursor: text;
+  user-select: text;
+  white-space: pre-wrap;
+  overflow: visible;
+  text-overflow: clip;
+  caret-color: var(--ink);
+  background: rgba(10, 10, 10, 0.04);
+  border-radius: 2px;
+  padding: 0 2px;
+  margin: 0 -2px;
+}
+.frame-app .el.editing {
+  cursor: text;
+}
+
+/* Card with nested structure */
+.frame-app .el.is-card {
+  padding: 0;
+  overflow: hidden;
+}
+.frame-app .el.is-card .el-card-body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+  width: 100%;
+  gap: 8px;
+  pointer-events: none;
+}
+.frame-app .el.is-card .el-card-head {
+  padding: 12px 14px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.frame-app .el.is-card .el-card-thumb {
+  background: repeating-linear-gradient(-45deg, var(--hair) 0 6px, var(--surface-2) 6px 12px);
+  min-height: 40px;
+  margin: 0 14px;
+  border-radius: 3px;
+}
+.frame-app .el.is-card .el-card-meta {
+  padding: 0 14px 12px;
+  display: grid;
+  gap: 6px;
+}
+.frame-app .el.is-card .el-card-title-line,
+.frame-app .el.is-card .el-card-meta-line {
+  display: block;
+  height: 8px;
+  background: var(--hair);
+  border-radius: 2px;
+}
+.frame-app .el.is-card .el-card-meta-line {
+  height: 6px;
+  width: 60%;
+}
+
+/* Checkbox (global .el.is-checkbox sets flex, here adds proper mark) */
+.frame-app .el.is-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+.frame-app .el.is-checkbox .checkbox-mark {
+  width: 100%;
+  height: 100%;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  background: var(--surface);
+  position: relative;
+  pointer-events: none;
+}
+.frame-app .el.is-checkbox .checkbox-mark::after {
+  content: '';
+  position: absolute;
+  left: 28%;
+  top: 10%;
+  width: 30%;
+  height: 55%;
+  border: solid var(--ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.frame-app .el.is-checkbox.is-unchecked .checkbox-mark::after {
+  display: none;
+}
+
+/* Toggle (override the global pill pattern) */
+.frame-app .el.is-toggle {
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  background: var(--ink);
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  overflow: hidden;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+.frame-app .el.is-toggle .toggle-knob {
+  display: block;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--bg);
+  pointer-events: none;
+  transition: margin 120ms ease;
+}
+.frame-app .el.is-toggle.is-unchecked {
+  background: var(--surface);
+  border-color: var(--mute);
+}
+.frame-app .el.is-toggle.is-unchecked .toggle-knob {
+  margin-left: 0;
+  margin-right: auto;
+  background: var(--mute);
+}
+
+/* Phone frame with notch */
+.frame-app .el.is-phone-frame {
+  padding: 6px;
+}
+.frame-app .el.is-phone-frame .phone-body {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-2);
+  border-radius: 28px;
+  position: relative;
+  border: 1px solid var(--hair);
+  overflow: hidden;
+  pointer-events: none;
+}
+.frame-app .el.is-phone-frame .phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 35%;
+  height: 16px;
+  background: var(--ink);
+  border-radius: 0 0 10px 10px;
+}
+
+/* Image stub */
+.frame-app .el.is-image {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.frame-app .el.is-image .image-stub {
+  display: grid;
+  place-items: center;
+  color: var(--mute-2);
+  pointer-events: none;
+}
+.frame-app .el.is-image .image-src {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  border-radius: inherit;
+}
+
+/* Nav bar inner structure */
+.frame-app .el.is-nav .brand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+.frame-app .el.is-nav .login {
+  font-weight: 600;
+  padding: 4px 12px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  color: var(--ink);
+}
+
+/* ── Transform handles: 8 resize grips + rotation ─────────────────────── */
+.frame-app .el .handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--bg);
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+  touch-action: none;
+}
+.frame-app .el .handle:hover {
+  background: var(--ink);
+}
+.frame-app .el .handle[data-dir='nw'] {
+  top: -6px;
+  left: -6px;
+  cursor: nwse-resize;
+}
+.frame-app .el .handle[data-dir='n'] {
+  top: -6px;
+  left: calc(50% - 5px);
+  cursor: ns-resize;
+}
+.frame-app .el .handle[data-dir='ne'] {
+  top: -6px;
+  right: -6px;
+  cursor: nesw-resize;
+}
+.frame-app .el .handle[data-dir='e'] {
+  top: calc(50% - 5px);
+  right: -6px;
+  cursor: ew-resize;
+}
+.frame-app .el .handle[data-dir='se'] {
+  bottom: -6px;
+  right: -6px;
+  cursor: nwse-resize;
+}
+.frame-app .el .handle[data-dir='s'] {
+  bottom: -6px;
+  left: calc(50% - 5px);
+  cursor: ns-resize;
+}
+.frame-app .el .handle[data-dir='sw'] {
+  bottom: -6px;
+  left: -6px;
+  cursor: nesw-resize;
+}
+.frame-app .el .handle[data-dir='w'] {
+  top: calc(50% - 5px);
+  left: -6px;
+  cursor: ew-resize;
+}
+
+.frame-app .el .rot-handle {
+  position: absolute;
+  top: -34px;
+  left: calc(50% - 11px);
+  width: 22px;
+  height: 22px;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  z-index: 21;
+  color: var(--ink);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition:
+    background 120ms,
+    color 120ms,
+    transform 120ms;
+  touch-action: none;
+}
+.frame-app .el .rot-handle:hover {
+  background: var(--ink);
+  color: var(--bg);
+  transform: scale(1.1);
+}
+.frame-app .el .rot-handle:active {
+  cursor: grabbing;
+}
+.frame-app .el .rot-handle lucide-icon {
+  pointer-events: none;
+}
+
+/* Subtle stem connecting rotation handle to top edge */
+.frame-app .el.selected::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: calc(50% - 1px);
+  width: 1px;
+  height: 12px;
+  background: var(--ink);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 19;
+}
+
+/* ── Marquee selection rectangle ──────────────────────────────────────── */
+.frame-app .board .marquee-rect {
+  position: absolute;
+  pointer-events: none;
+  z-index: 17;
+  border: 1px dashed var(--ink, #0a0a0a);
+  background: rgba(10, 10, 10, 0.06);
+}
+
+/* ── Alignment guides (Figma-style magenta 1px lines) ─────────────────── */
+.frame-app .board .guide {
+  position: absolute;
+  pointer-events: none;
+  z-index: 16;
+  background: #f43f5e;
+}
+.frame-app .board .guide.vertical {
+  width: 1px;
+}
+.frame-app .board .guide.horizontal {
+  height: 1px;
+}
+
+/* ── Column grid overlay ──────────────────────────────────────────────── */
+.frame-app .board .grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.frame-app .board .grid-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(244, 63, 94, 0.06);
+  border-left: 1px dashed rgba(244, 63, 94, 0.4);
+  border-right: 1px dashed rgba(244, 63, 94, 0.4);
+}
+
+/* ── Page tab delete button (always reserved space, opacity fade) ────── */
+.frame-app .page-tabs .page-tab-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+/* Reserve space for the X button whenever it could appear, so hovering
+ * doesn't shift layout. No width/padding changes on hover — only opacity. */
+.frame-app .page-tabs .page-tab-wrap.has-del .page-tab {
+  padding-right: 28px;
+}
+.frame-app .page-tabs .page-del {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--mute-2);
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    background 140ms ease,
+    color 140ms ease;
+}
+.frame-app .page-tabs .page-tab-wrap:hover .page-del,
+.frame-app .page-tabs .page-tab-wrap:focus-within .page-del {
+  opacity: 1;
+  pointer-events: auto;
+}
+.frame-app .page-tabs .page-del:hover {
+  background: var(--danger, #b91c1c);
+  color: var(--bg);
+}
+.frame-app .page-tabs .page-del:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  opacity: 1;
+  pointer-events: auto;
+}
+.frame-app .page-tabs .page-del lucide-icon {
+  pointer-events: none;
+}
+.frame-app .page-tabs .page-tab-wrap:has(.page-tab.on) .page-del {
+  color: var(--mute-3);
+}
+.frame-app .page-tabs .page-tab-wrap:has(.page-tab.on) .page-del:hover {
+  color: var(--bg);
+}
+
+/* ── Inspector: grid config section + shared ctrl input ──────────────── */
+.frame-app .panel-body .grid-section {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hair);
+}
+.frame-app .panel-sub {
+  font-size: 10.5px;
+  color: var(--mute-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.frame-app .toggle-row {
+  display: flex;
+  margin-bottom: 10px;
+}
+.frame-app .grid-field .ctrl input,
+.frame-app .field .ctrl input {
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: var(--ink);
+  font: inherit;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.frame-app .field .ctrl input[type='number']::-webkit-inner-spin-button,
+.frame-app .field .ctrl input[type='number']::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.frame-app .field .ctrl .font-select {
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: var(--ink);
+  font: inherit;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  cursor: pointer;
+}
+.frame-app .field .two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* ── Rotation slider ─────────────────────────────────────────────── */
+.frame-app .rotation-field > label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.frame-app .rotation-field .rotation-value {
+  color: var(--mute);
+  font-weight: 500;
+}
+.frame-app .slider {
+  position: relative;
+  padding: 6px 0 20px;
+}
+.frame-app .slider input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--hair);
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+}
+.frame-app .slider input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: grab;
+  transition: transform 120ms ease;
+}
+.frame-app .slider input[type='range']::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+.frame-app .slider input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: grab;
+}
+.frame-app .slider input[type='range']:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--focus, var(--ink));
+  outline-offset: 2px;
+}
+.frame-app .slider-ticks {
+  position: relative;
+  height: 14px;
+  margin-top: 6px;
+  pointer-events: none;
+}
+.frame-app .slider-ticks span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--mute-2);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.frame-app .slider-ticks span::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 4px;
+  background: var(--hair);
+}
+.frame-app .slider-ticks span.minor::before {
+  height: 3px;
+  background: var(--mute-3, #d4d4d8);
+}
+.frame-app .slider-ticks span.edge-start {
+  transform: translateX(0);
+}
+.frame-app .slider-ticks span.edge-start::before {
+  left: 0;
+  transform: translateX(0);
+}
+.frame-app .slider-ticks span.edge-end {
+  transform: translateX(-100%);
+}
+.frame-app .slider-ticks span.edge-end::before {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+/* Inspector: button variants (Duplicate/Delete) */
+.frame-app .inspector-actions .btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 140ms,
+    border-color 140ms,
+    color 140ms;
+}
+.frame-app .inspector-actions .btn:hover {
+  background: var(--surface-3);
+  border-color: var(--ink);
+}
+.frame-app .inspector-actions .btn.danger {
+  color: var(--danger, #b91c1c);
+  border-color: color-mix(in srgb, var(--danger, #b91c1c) 40%, var(--hair));
+}
+.frame-app .inspector-actions .btn.danger:hover {
+  background: var(--danger, #b91c1c);
+  border-color: var(--danger, #b91c1c);
+  color: var(--bg);
+}
+
+/* ── Layers panel ────────────────────────────────────────────────── */
+.frame-app .panel.layers .panel-body.layers-body {
+  padding: 6px 6px 10px;
+}
+.frame-app .layer-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: grab;
+  user-select: none;
+  font-size: 12.5px;
+  color: var(--ink);
+  border: 1px solid transparent;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+.frame-app .layer-row.dragging {
+  opacity: 0.4;
+}
+.frame-app .layer-row.drop-above::before,
+.frame-app .layer-row.drop-below::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+}
+.frame-app .layer-row.drop-above::before {
+  top: -1px;
+}
+.frame-app .layer-row.drop-below::after {
+  bottom: -1px;
+}
+.frame-app .layer-row.drop-above::before,
+.frame-app .layer-row.drop-below::after {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0);
+}
+.frame-app .layer-row.drop-above::before {
+  /* Small dot anchor on the left edge */
+  box-shadow: -3px 0 0 0 var(--ink);
+}
+.frame-app .layer-row.drop-below::after {
+  box-shadow: -3px 0 0 0 var(--ink);
+}
+.frame-app .layer-row:hover {
+  background: var(--surface-3);
+}
+.frame-app .layer-row.selected {
+  background: var(--surface-3);
+  border-color: var(--ink);
+}
+.frame-app .layer-row:active {
+  cursor: grabbing;
+}
+.frame-app .layer-row.locked .layer-label {
+  color: var(--mute);
+}
+.frame-app .layer-drag {
+  width: 12px;
+  height: 12px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--mute-2);
+  flex: 0 0 auto;
+}
+.frame-app .layer-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--mute);
+  flex: 0 0 auto;
+}
+.frame-app .layer-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.frame-app .layer-lock {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--mute-2);
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  opacity: 0;
+  transition:
+    opacity 140ms ease,
+    background 140ms ease,
+    color 140ms ease;
+}
+.frame-app .layer-row:hover .layer-lock,
+.frame-app .layer-row.selected .layer-lock,
+.frame-app .layer-row.locked .layer-lock {
+  opacity: 1;
+}
+.frame-app .layer-lock:hover {
+  background: var(--surface-2, rgba(0, 0, 0, 0.06));
+  color: var(--ink);
+}
+.frame-app .layer-lock.on {
+  color: var(--ink);
+}
+
+/* Locked element visual on canvas */
+.frame-app .el.locked {
+  cursor: default;
+}
+.frame-app .el.locked.selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  outline: 1px dashed var(--mute);
+  outline-offset: 0;
+  pointer-events: none;
+}
+
+/* ── Context menu ────────────────────────────────────────────────── */
+.frame-app .ctx-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+.frame-app .ctx-menu {
+  position: fixed;
+  z-index: 81;
+  min-width: 200px;
+  background: var(--bg);
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  font-size: 12.5px;
+}
+.frame-app .ctx-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+  font-size: 12.5px;
+}
+.frame-app .ctx-item:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+.frame-app .ctx-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.frame-app .ctx-item.danger {
+  color: var(--danger, #b91c1c);
+}
+.frame-app .ctx-item.danger:hover:not(:disabled) {
+  background: var(--danger, #b91c1c);
+  color: var(--bg);
+}
+.frame-app .ctx-shortcut {
+  color: var(--mute-2);
+  font-size: 11px;
+}
+.frame-app .ctx-sep {
+  height: 1px;
+  background: var(--hair);
+  margin: 4px 2px;
+}
+
+/* ── Inspector: heading level, color, orientation ─────────────────── */
+.frame-app .level-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.frame-app .level-btn {
+  appearance: none;
+  border: 1px solid var(--hair);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 5px 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+.frame-app .level-btn:hover {
+  border-color: var(--ink);
+}
+.frame-app .level-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.frame-app .color-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.frame-app .color-swatch {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.frame-app .color-swatch input[type='color'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  cursor: pointer;
+}
+.frame-app .color-chip {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.frame-app .color-swatch.empty {
+  background:
+    linear-gradient(45deg, transparent 46%, #d4d4d8 46% 54%, transparent 54%),
+    repeating-conic-gradient(#fff 0 25%, #f1f1f3 0 50%) 0 0 / 8px 8px;
+}
+.frame-app .color-swatch.empty .color-chip {
+  background: transparent !important;
+}
+.frame-app .color-palette {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+}
+.frame-app .palette-chip {
+  appearance: none;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    outline-offset 120ms ease;
+}
+.frame-app .palette-chip:hover {
+  transform: scale(1.08);
+}
+.frame-app .palette-chip.active {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  border-color: var(--ink);
+}
+.frame-app .palette-chip.none {
+  background: linear-gradient(45deg, transparent 46%, #d4d4d8 46% 54%, transparent 54%), #fff;
+}
+.frame-app .color-hex {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 11.5px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.frame-app .color-hex:focus {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+.frame-app .btn.ghost.xs {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 4px;
+}
+.frame-app .seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.frame-app .seg.seg-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.frame-app .seg-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 6px 0;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    color 120ms;
+}
+.frame-app .seg-btn + .seg-btn {
+  border-left: 1px solid var(--hair);
+}
+.frame-app .seg-btn:hover {
+  background: var(--surface-3);
+}
+.frame-app .seg-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* ── Image library panel ────────────────────────────────────────── */
+.frame-app .panel.images {
+  border-right: 1px solid var(--hair);
+}
+.frame-app .panel.images.collapsed {
+  transform: translateX(-8px);
+}
+.frame-app .panel-body.images-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.frame-app .images-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+.frame-app .images-tile {
+  position: relative;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  background: var(--surface-2);
+  aspect-ratio: 1 / 1;
+  display: block;
+  transition:
+    border-color 140ms,
+    box-shadow 140ms,
+    transform 140ms;
+}
+.frame-app .images-tile:hover {
+  border-color: var(--ink);
+  box-shadow: 0 2px 8px rgba(10, 10, 10, 0.08);
+}
+.frame-app .images-tile:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.frame-app .images-tile.disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.frame-app .images-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.frame-app .images-tile-credit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 6px 8px;
+  font-size: 10.5px;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 140ms;
+}
+.frame-app .images-tile:hover .images-tile-credit,
+.frame-app .images-tile:focus-visible .images-tile-credit {
+  opacity: 1;
+}
+.frame-app .images-sentinel {
+  height: 1px;
+  width: 100%;
+}
+.frame-app .images-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 12.5px;
+}
+.frame-app .images-error .btn {
+  margin-left: auto;
+}
+.frame-app .images-attribution {
+  margin: 10px 2px 0;
+  color: var(--mute-2);
+}
+.frame-app .images-attribution a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* Inspector image section */
+.frame-app .image-field .image-preview {
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  background: var(--surface-2);
+  margin-bottom: 6px;
+}
+.frame-app .image-field .image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.frame-app .image-field .image-credit {
+  margin: 0 0 8px;
+  line-height: 1.45;
+}
+.frame-app .image-field .image-credit a {
+  color: inherit;
+  text-decoration: underline;
+}
+.frame-app .image-field .image-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.frame-app .image-field .image-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

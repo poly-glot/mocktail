@@ -1,0 +1,60 @@
+<div class="grid-section" data-testid="grid-section">
+  <div class="panel-sub">Layout grid</div>
+  <label class="toggle toggle-row">
+    <input
+      type="checkbox"
+      [checked]="config().visible"
+      (change)="toggleVisible()"
+      data-testid="grid-visible"
+    />
+    <span class="toggle-switch"></span>
+    <span>Show columns</span>
+  </label>
+  <label class="toggle toggle-row">
+    <input
+      type="checkbox"
+      [checked]="!!config().snap"
+      (change)="toggleSnap()"
+      data-testid="grid-snap"
+    />
+    <span class="toggle-switch"></span>
+    <span>Snap to grid</span>
+  </label>
+  <div class="field grid-field">
+    <label>Columns</label>
+    <div class="ctrl">
+      <input
+        type="number"
+        min="1"
+        max="24"
+        [value]="config().columns"
+        (input)="updateNumber('columns', $any($event.target).value)"
+        data-testid="grid-columns"
+      />
+    </div>
+  </div>
+  <div class="field grid-field">
+    <label>Gutter</label>
+    <div class="ctrl">
+      <input
+        type="number"
+        min="0"
+        [value]="config().gutter"
+        (input)="updateNumber('gutter', $any($event.target).value)"
+        data-testid="grid-gutter"
+      />
+    </div>
+  </div>
+  <div class="field grid-field">
+    <label>Margin</label>
+    <div class="ctrl">
+      <input
+        type="number"
+        min="0"
+        [value]="config().margin"
+        (input)="updateNumber('margin', $any($event.target).value)"
+        data-testid="grid-margin"
+      />
+    </div>
+  </div>
+</div>

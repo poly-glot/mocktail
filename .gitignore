@@ -1,0 +1,47 @@
+# Zig (backend/collab)
+backend/collab/zig-out/
+backend/collab/.zig-cache/
+backend/collab/proto/
+
+# Node / Angular (frontend)
+**/node_modules/
+**/.pnpm-store/
+**/*.tsbuildinfo
+frontend/dist/
+frontend/out-tsc/
+frontend/.angular/
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+
+# Env
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+firebase-debug.log
+firestore-debug.log
+
+# Firebase
+.firebase/
+
+# Claude
+.claude/
+reference-app/
+frontend/coverage/
+.playwright-cli/
+investigations/

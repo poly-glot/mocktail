@@ -1,0 +1,37 @@
+<div class="members-page">
+  <div class="members-hero">
+    <h1>Members</h1>
+    <p class="muted">Invite collaborators or manage existing members.</p>
+  </div>
+  <div class="members-actions">
+    <button type="button" class="btn primary" (click)="generateInvite()" data-testid="gen-invite">
+      + Invite link
+    </button>
+  </div>
+  @if (inviteUrl(); as url) {
+    <div class="invite-box" data-testid="invite-box">
+      <code>{{ url }}</code>
+      <button type="button" class="btn ghost sm" (click)="copy(url)">Copy</button>
+    </div>
+  }
+  <table class="members-table" data-testid="members-table">
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Email</th>
+        <th>Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (m of members(); track m.id) {
+        <tr>
+          <td>{{ m.displayName ?? '(unnamed)' }}</td>
+          <td class="muted">{{ m.email ?? '—' }}</td>
+          <td>
+            <span class="tag mono">{{ m.role }}</span>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

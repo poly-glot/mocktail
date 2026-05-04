@@ -1,0 +1,59 @@
+<aside
+  class="panel components"
+  [class.collapsed]="collapsed()"
+  [attr.aria-hidden]="collapsed() ? 'true' : null"
+  data-testid="components-panel"
+>
+  <div class="panel-head">
+    <span>Components</span>
+    <span style="flex: 1"></span>
+    <span class="tag mono">{{ totalCount() }}</span>
+    <button
+      type="button"
+      class="icon-btn"
+      (click)="onCollapse()"
+      title="Collapse panel (⌘\)"
+      aria-label="Collapse components panel"
+      data-testid="collapse-left"
+    >
+      <lucide-icon name="panel-left-close" class="i-16"></lucide-icon>
+    </button>
+  </div>
+  <div class="panel-body">
+    <div class="search">
+      <lucide-icon name="search" class="i-12"></lucide-icon>
+      <input
+        placeholder="Search components"
+        [value]="searchValue()"
+        (input)="onSearchInput($any($event.target).value)"
+        data-testid="palette-search"
+      />
+    </div>
+    @for (p of filteredCategories(); track p.label) {
+      <div class="cat">
+        <h4>{{ p.label }}</h4>
+        <div class="cgrid">
+          @for (it of p.items; track it.type) {
+            <div
+              class="ctile"
+              draggable="true"
+              [attr.data-testid]="'palette-' + it.type"
+              (dragstart)="onDragStart($event, it)"
+              (dragend)="onDragEnd()"
+              (click)="onItemClick(it)"
+              title="Click to insert, or drag onto the canvas"
+            >
+              <div class="preview">
+                <lucide-icon [name]="it.icon" class="i-18"></lucide-icon>
+              </div>
+              <div class="label">{{ it.label }}</div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+    @if (filteredCategories().length === 0) {
+      <p class="muted small empty-hint">No components match "{{ searchValue() }}".</p>
+    }
+  </div>
+</aside>

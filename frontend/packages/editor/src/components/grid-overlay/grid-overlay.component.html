@@ -1,0 +1,7 @@
+@if (visible()) {
+  <div class="grid-overlay" data-testid="grid-overlay">
+    @for (r of regions(); let i = $index; track i) {
+      <div class="grid-col" [style.left.px]="r.left" [style.width.px]="r.width"></div>
+    }
+  </div>
+}

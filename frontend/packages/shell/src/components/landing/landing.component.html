@@ -1,0 +1,261 @@
+@if (isBootstrapping()) {
+  <div class="bootstrap">
+    <div class="mark">M</div>
+    <p class="muted">Preparing your workspace…</p>
+  </div>
+} @else {
+  <div class="page">
+    <header class="nav">
+      <div class="nav__inner">
+        <a class="nav__brand" routerLink="/">MOCKTAIL</a>
+        <nav class="nav__links">
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+        </nav>
+        <a class="btn btn--primary nav__cta" routerLink="/login">Open app</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero__inner">
+        <div class="hero__copy">
+          <p class="eyebrow">AI-NATIVE WIREFRAMING</p>
+          <h1 class="h1">
+            From a sentence to a wireframe,
+            <br />in seconds
+          </h1>
+          <p class="lede">
+            Describe what you're building and Mocktail drafts the wireframe. Drag, refine, and ship
+            it — with your team, in real time.
+          </p>
+          <div class="hero__ctas">
+            <a class="btn btn--primary btn--lg btn--arrow" routerLink="/login">Get started</a>
+            <a class="btn--link" href="#how">See how it works</a>
+          </div>
+        </div>
+
+        <div class="hero__mock" aria-hidden="true">
+          <div class="mock">
+            <div class="mock__chrome">
+              <span class="mock__dot"></span>
+              <span class="mock__dot"></span>
+              <span class="mock__dot"></span>
+              <span class="mock__url">mocktail.app/t/acme/p/checkout</span>
+            </div>
+            <div class="mock__body">
+              <div class="mock__palette">
+                <div class="mock__palette-group">Components</div>
+                <div class="mock__palette-item">Button</div>
+                <div class="mock__palette-item">Input</div>
+                <div class="mock__palette-item is-active">Card</div>
+                <div class="mock__palette-item">Nav</div>
+                <div class="mock__palette-item">Modal</div>
+              </div>
+              <div class="mock__canvas">
+                <div class="mock__prompt">
+                  <span class="mock__prompt-dot"></span>
+                  "checkout page with billing + card form"
+                </div>
+                <div class="mock__frame">
+                  <div class="mock__frame-title"></div>
+                  <div class="mock__frame-row">
+                    <div class="mock__frame-field"></div>
+                    <div class="mock__frame-field"></div>
+                  </div>
+                  <div class="mock__frame-field mock__frame-field--full"></div>
+                  <div class="mock__frame-field mock__frame-field--full"></div>
+                  <div class="mock__frame-cta"></div>
+                </div>
+                <div class="mock__cursor" style="top: 52%; left: 58%">
+                  <span>Nora</span>
+                </div>
+                <div class="mock__cursor mock__cursor--alt" style="top: 32%; left: 34%">
+                  <span>Jake</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="features">
+      <div class="features__inner">
+        <div class="features__heading">
+          <p class="eyebrow">FEATURES</p>
+          <h2 class="h2">Everything you need to wireframe</h2>
+          <p class="lede">
+            Not a kitchen sink. Just the tools that move a wireframe from idea to shippable in one
+            surface.
+          </p>
+        </div>
+
+        <ul class="features__grid">
+          <li class="feature">
+            <div class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 6h16M4 12h10M4 18h7" stroke-linecap="round" />
+                <circle cx="19" cy="18" r="3" />
+              </svg>
+            </div>
+            <h3 class="feature__title">Prompt to wireframe</h3>
+            <p class="feature__body">
+              Type what you want and AI drafts the first screen. Powered by Gemini, with a local
+              fallback for airgapped demos.
+            </p>
+          </li>
+
+          <li class="feature">
+            <div class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            </div>
+            <h3 class="feature__title">Component palette</h3>
+            <p class="feature__body">
+              Click to insert or drag to drop. Buttons, forms, nav, cards — everything prebuilt,
+              everything editable.
+            </p>
+          </li>
+
+          <li class="feature">
+            <div class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 4l16 8-7 2-2 7z" stroke-linejoin="round" />
+                <path d="M13 13l6 6" stroke-linecap="round" />
+              </svg>
+            </div>
+            <h3 class="feature__title">Realtime cursors</h3>
+            <p class="feature__body">
+              See every teammate's pointer live. No refresh, no stepping on each other's edits.
+            </p>
+          </li>
+
+          <li class="feature">
+            <div class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path
+                  d="M21 11.5a8.5 8.5 0 11-4.3-7.4L21 3v5h-5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <circle cx="12" cy="12" r="2" fill="currentColor" />
+              </svg>
+            </div>
+            <h3 class="feature__title">Pinned comments</h3>
+            <p class="feature__body">
+              Drop a comment anywhere on the canvas. Threads stay anchored to the pixel you pinned
+              them to.
+            </p>
+          </li>
+
+          <li class="feature">
+            <div class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="9" cy="8" r="3" />
+                <circle cx="17" cy="9" r="2.5" />
+                <path d="M3 19c.8-3 3.2-5 6-5s5.2 2 6 5" stroke-linecap="round" />
+                <path d="M15 17c.6-2 2.2-3.3 4-3.3s3.4 1.2 4 3.3" stroke-linecap="round" />
+              </svg>
+            </div>
+            <h3 class="feature__title">Workspaces</h3>
+            <p class="feature__body">
+              Invite teammates with one link. Each tenant is its own isolated workspace with its own
+              projects and members.
+            </p>
+          </li>
+
+          <li class="feature">
+            <div class="feature__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 18h4M10 18h4M16 18h4" stroke-linecap="round" />
+                <path d="M4 12h10M16 12h4" stroke-linecap="round" />
+                <path d="M4 6h6M12 6h8" stroke-linecap="round" />
+              </svg>
+            </div>
+            <h3 class="feature__title">Activity feed</h3>
+            <p class="feature__body">
+              Every change, edit, and comment in one tenant-wide stream. Catch up at a glance.
+            </p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="how" class="how">
+      <div class="how__inner">
+        <div class="how__copy">
+          <p class="eyebrow">HOW IT WORKS</p>
+          <h2 class="h2">Idea to wireframe in four clicks</h2>
+          <p class="lede">
+            Sign in, sketch, iterate. No setup, no sandbox — just the canvas and your team.
+          </p>
+          <ol class="steps">
+            <li class="step">
+              <span class="step__num">01</span>
+              <div class="step__body">
+                <h3 class="step__title">Sign in</h3>
+                <p>Email link or Google. One click, no forms.</p>
+              </div>
+            </li>
+            <li class="step">
+              <span class="step__num">02</span>
+              <div class="step__body">
+                <h3 class="step__title">Create a workspace</h3>
+                <p>Your team, your projects, your members.</p>
+              </div>
+            </li>
+            <li class="step">
+              <span class="step__num">03</span>
+              <div class="step__body">
+                <h3 class="step__title">Prompt or drag</h3>
+                <p>Describe the screen, or drop components from the palette.</p>
+              </div>
+            </li>
+            <li class="step">
+              <span class="step__num">04</span>
+              <div class="step__body">
+                <h3 class="step__title">Refine together</h3>
+                <p>Comment, iterate, and rename until it ships.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="how__visual" aria-hidden="true">
+          <div class="how__chip">AI prompt</div>
+          <div class="how__arrow">↓</div>
+          <div class="how__chip">Wireframe</div>
+          <div class="how__arrow">↓</div>
+          <div class="how__chip how__chip--active">
+            Your team's next product<span class="how__cursor">✎</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="cta__inner">
+        <p class="eyebrow">READY?</p>
+        <h2 class="h2">Start wireframing today</h2>
+        <p class="lede">Sign in and AI drafts your first wireframe in under a minute.</p>
+        <a class="btn btn--primary btn--lg btn--arrow" routerLink="/login">Get started</a>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div class="foot__inner">
+        <span class="foot__brand">Mocktail</span>
+        <nav class="foot__links">
+          <a routerLink="/login">Get started</a>
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+        </nav>
+        <span class="foot__tagline">AI-native wireframing, built for teams.</span>
+      </div>
+    </footer>
+  </div>
+}

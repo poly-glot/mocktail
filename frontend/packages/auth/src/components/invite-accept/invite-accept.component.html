@@ -1,0 +1,24 @@
+<div class="auth-frame">
+  <div class="auth-card">
+    <div class="brand" style="justify-content: center; margin-bottom: 18px">
+      <div class="mark">M</div>
+      <span>Mocktail</span>
+    </div>
+    <h1 class="auth-title">You've been invited</h1>
+    <p class="auth-sub">Accept the invite to join the team.</p>
+    @if (error(); as e) {
+      <p class="error small">{{ e }}</p>
+    }
+    @if (working()) {
+      <p class="muted small">Joining…</p>
+    } @else if (!user()) {
+      <button type="button" class="btn lg primary" (click)="signIn()" data-testid="invite-signin">
+        Sign in to accept
+      </button>
+    } @else {
+      <button type="button" class="btn lg primary" (click)="accept()" data-testid="invite-accept">
+        Accept invitation
+      </button>
+    }
+  </div>
+</div>

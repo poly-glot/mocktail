@@ -1,0 +1,70 @@
+{
+  "name": "mocktail",
+  "build": { "dockerfile": "Dockerfile" },
+
+  "mounts": [
+    "source=${localEnv:HOME}/.npm,target=/home/vscode/.npm,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached"
+  ],
+
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": true,
+      "installOhMyZsh": true,
+      "username": "vscode",
+      "upgradePackages": true
+    },
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/dhoeric/features/google-cloud-cli:1": {}
+  },
+
+  "appPort": [4200, 8082, 5000, 4000, 8083, 9099, 8085],
+  "forwardPorts": [4200, 8082, 5000, 4000, 8083, 9099, 8085],
+  "portsAttributes": {
+    "4200": { "label": "Angular dev server",   "onAutoForward": "notify" },
+    "8082": { "label": "Zig WebSocket",        "onAutoForward": "notify" },
+    "5000": { "label": "Firebase Hosting",     "onAutoForward": "notify" },
+    "4000": { "label": "Firebase Emulator UI", "onAutoForward": "notify" },
+    "8083": { "label": "Firestore",            "onAutoForward": "silent" },
+    "9099": { "label": "Auth Emulator",        "onAutoForward": "silent" },
+    "8085": { "label": "Deno email-auth",      "onAutoForward": "silent" }
+  },
+
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "containerEnv": {
+    "FIRESTORE_EMULATOR_HOST": "0.0.0.0:8083",
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
+    "PORT": "8082"
+  },
+
+  "remoteUser": "vscode",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ziglang.vscode-zig",
+        "angular.ng-template",
+        "ms-playwright.playwright",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "streetsidesoftware.code-spell-checker",
+        "eamodio.gitlens",
+        "toba.vsfire",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "zig.path": "/usr/local/bin/zig",
+        "zig.zls.path": "/usr/local/bin/zls",
+        "editor.formatOnSave": true,
+        "[zig]": {
+          "editor.defaultFormatter": "ziglang.vscode-zig"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "capturedAt": "2026-05-04T12:55:22.581Z",
+  "outputName": "21.x-zoneless",
+  "interactionScriptVersion": 1,
+  "samples": [
+    {
+      "sampleIndex": 0,
+      "scriptDurationMs": 34.365,
+      "taskDurationMs": 141.142,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 18.223,
+      "recalcStyleDurationMs": 5.593,
+      "longTasks": 2,
+      "frames": 100
+    },
+    {
+      "sampleIndex": 1,
+      "scriptDurationMs": 36.436,
+      "taskDurationMs": 136.835,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 16.552,
+      "recalcStyleDurationMs": 5.474,
+      "longTasks": 0,
+      "frames": 91
+    },
+    {
+      "sampleIndex": 2,
+      "scriptDurationMs": 35.965,
+      "taskDurationMs": 130.247,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 14.848,
+      "recalcStyleDurationMs": 5.033,
+      "longTasks": 0,
+      "frames": 93
+    },
+    {
+      "sampleIndex": 3,
+      "scriptDurationMs": 44.036,
+      "taskDurationMs": 161.157,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 20.786,
+      "recalcStyleDurationMs": 6.213,
+      "longTasks": 2,
+      "frames": 94
+    },
+    {
+      "sampleIndex": 4,
+      "scriptDurationMs": 32.606,
+      "taskDurationMs": 121.315,
+      "layoutCount": 33,
+      "recalcStyleCount": 33,
+      "layoutDurationMs": 13.88,
+      "recalcStyleDurationMs": 4.768,
+      "longTasks": 0,
+      "frames": 90
+    }
+  ],
+  "median": {
+    "scriptDurationMs": 35.589,
+    "taskDurationMs": 136.075,
+    "layoutCount": 33,
+    "recalcStyleCount": 33,
+    "layoutDurationMs": 16.541,
+    "recalcStyleDurationMs": 5.367,
+    "longTasks": 0.667,
+    "frames": 92.667
+  }
+}

@@ -1,0 +1,105 @@
+<aside
+  class="panel images"
+  [class.collapsed]="collapsed()"
+  [attr.aria-hidden]="collapsed() ? 'true' : null"
+  data-testid="images-panel"
+>
+  <div class="panel-head">
+    <span>Images</span>
+    <span style="flex: 1"></span>
+    @if (svc.results().length > 0) {
+      <span class="tag mono">{{ svc.results().length }}</span>
+    }
+    <button
+      type="button"
+      class="icon-btn"
+      (click)="onCollapse()"
+      title="Collapse panel (⌘\)"
+      aria-label="Collapse images panel"
+      data-testid="collapse-left"
+    >
+      <lucide-icon name="panel-left-close" class="i-16"></lucide-icon>
+    </button>
+  </div>
+  <div class="panel-body images-body">
+    <div class="search">
+      <lucide-icon name="search" class="i-12"></lucide-icon>
+      <input
+        placeholder="Search Unsplash"
+        [value]="searchValue()"
+        (input)="onSearchInput($any($event.target).value)"
+        data-testid="images-search"
+        aria-label="Search Unsplash images"
+      />
+    </div>
+
+    @if (!svc.canApply()) {
+      <p class="muted small empty-hint" data-testid="images-no-selection">
+        Select an image element on the canvas to apply a photo.
+      </p>
+    }
+
+    @if (svc.error(); as err) {
+      <div class="images-error" role="alert" data-testid="images-error">
+        <lucide-icon name="alert-circle" class="i-14"></lucide-icon>
+        <span>{{ err }}</span>
+        <button type="button" class="btn ghost sm" (click)="onRetry()" data-testid="images-retry">
+          Retry
+        </button>
+      </div>
+    }
+
+    @if (svc.results().length > 0) {
+      <div class="images-grid" data-testid="images-grid">
+        @for (p of svc.results(); track trackPhoto($index, p)) {
+          <button
+            type="button"
+            class="images-tile"
+            [class.disabled]="!svc.canApply()"
+            [attr.title]="'Photo by ' + p.user.name + ' on Unsplash'"
+            [attr.aria-label]="'Apply photo by ' + p.user.name"
+            [attr.data-testid]="'images-tile-' + p.id"
+            (click)="onTileClick(p)"
+          >
+            <img
+              [src]="p.urls.thumb"
+              [alt]="'Photo by ' + p.user.name + ' on Unsplash'"
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="images-tile-credit">{{ p.user.name }}</span>
+          </button>
+        }
+      </div>
+
+      <div #sentinel class="images-sentinel" aria-hidden="true" data-testid="images-sentinel"></div>
+
+      @if (svc.loading()) {
+        <p class="muted small" data-testid="images-loading-more">Loading more…</p>
+      }
+      @if (!svc.hasMore() && svc.results().length > 0) {
+        <p class="muted small empty-hint" data-testid="images-end">No more results.</p>
+      }
+    } @else if (svc.loading()) {
+      <p class="muted small empty-hint" data-testid="images-loading">Searching…</p>
+    } @else if (svc.query() && !svc.error()) {
+      <p class="muted small empty-hint" data-testid="images-empty">
+        No photos for "{{ svc.query() }}".
+      </p>
+    } @else if (!svc.query() && !svc.error()) {
+      <p class="muted small empty-hint" data-testid="images-hint">
+        Search Unsplash for a photo to drop onto your image element.
+      </p>
+    }
+
+    <p class="muted tiny images-attribution">
+      Photos from
+      <a
+        href="https://unsplash.com/?utm_source=mocktail&utm_medium=referral"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Unsplash</a
+      >
+    </p>
+  </div>
+</aside>

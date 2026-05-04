@@ -1,0 +1,559 @@
+<aside
+  class="panel inspector"
+  [class.collapsed]="collapsed()"
+  [attr.aria-hidden]="collapsed() ? 'true' : null"
+  data-testid="inspector"
+>
+  <div class="panel-head">
+    <span>Inspector</span>
+    <span style="flex: 1"></span>
+    @if (selected(); as s) {
+      <span class="tag mono">{{ s.type }}</span>
+    }
+    <button
+      type="button"
+      class="icon-btn"
+      (click)="onCollapseToggle()"
+      title="Collapse panel (⌘])"
+      aria-label="Collapse inspector panel"
+      data-testid="collapse-right"
+    >
+      <lucide-icon name="panel-right-close" class="i-16"></lucide-icon>
+    </button>
+  </div>
+  <div class="panel-body">
+    @if (selected(); as s) {
+      @if (hasTextField(s.type)) {
+        <div class="field">
+          <label>Text</label>
+          <div class="ctrl">
+            <input
+              [value]="s.text ?? ''"
+              (input)="onText($any($event.target).value)"
+              data-testid="inspect-text"
+            />
+          </div>
+        </div>
+      }
+      @if (hasIcon(s.type)) {
+        <div class="field">
+          <label>Icon</label>
+          <div class="ctrl">
+            <mt-icon-picker
+              [value]="iconNameOf(s)"
+              (iconSelect)="onIconName($event)"
+            ></mt-icon-picker>
+          </div>
+        </div>
+      }
+      @if (s.type === 'image') {
+        <div class="field image-field" data-testid="inspect-image">
+          <label>Image</label>
+          @if (imageRefOf(s); as img) {
+            <div class="image-preview">
+              <img
+                [src]="img.thumb || img.src"
+                [alt]="'Photo by ' + img.photographer + ' on Unsplash'"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <p class="image-credit muted tiny" data-testid="image-credit">
+              Photo by
+              <a [href]="img.photographerUrl" target="_blank" rel="noopener noreferrer">{{
+                img.photographer
+              }}</a>
+              on
+              <a
+                href="https://unsplash.com/?utm_source=mocktail&utm_medium=referral"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Unsplash</a
+              >
+            </p>
+          } @else {
+            <p class="muted tiny" data-testid="image-empty-hint">
+              No photo set. Pick one from the image library.
+            </p>
+          }
+          <div class="image-actions">
+            <button
+              type="button"
+              class="btn ghost sm"
+              (click)="onImageReplace()"
+              data-testid="image-replace"
+            >
+              <lucide-icon name="image" class="i-12 i--block"></lucide-icon>
+              Replace image
+            </button>
+            @if (imageRefOf(s)) {
+              <button
+                type="button"
+                class="btn ghost sm"
+                (click)="onImageRemove()"
+                data-testid="image-remove"
+              >
+                <lucide-icon name="trash-2" class="i-12 i--block"></lucide-icon>
+                Remove
+              </button>
+            }
+          </div>
+        </div>
+      }
+      @if (s.type === 'heading') {
+        <div class="field">
+          <label>Heading level</label>
+          <div class="level-row">
+            @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+              <button
+                type="button"
+                class="level-btn"
+                [class.active]="(s.level ?? 1) === n"
+                (click)="onHeadingLevel(n.toString())"
+                [attr.data-testid]="'level-' + n"
+              >
+                H{{ n }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+      @if (hasRichText(s.type)) {
+        <div class="field">
+          <label>Font</label>
+          <div class="ctrl">
+            <select
+              class="font-select"
+              [value]="fontFamilyOf(s) ?? ''"
+              (change)="onFontFamily($any($event.target).value)"
+              data-testid="font-family"
+            >
+              <option value="">Default</option>
+              @for (f of googleFonts; track f) {
+                <option [value]="f">{{ f }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        @if (hasFontSize(s.type)) {
+          <div class="field">
+            <label>Size</label>
+            <div class="ctrl">
+              <select
+                class="font-select"
+                [value]="fontSizeOf(s)"
+                (change)="onFontSize($any($event.target).value)"
+                data-testid="font-size"
+              >
+                @for (sz of fontSizes; track sz.key) {
+                  <option [value]="sz.key">{{ sz.label }} ({{ sz.px }}px)</option>
+                }
+              </select>
+            </div>
+          </div>
+        }
+        <div class="field">
+          <label>Alignment</label>
+          <div class="seg seg-3">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="textAlignOf(s) === 'left'"
+              (click)="onTextAlign('left')"
+              data-testid="align-left"
+              title="Left align"
+              aria-label="Left align"
+            >
+              <lucide-icon name="align-left" class="i-14"></lucide-icon>
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="textAlignOf(s) === 'center'"
+              (click)="onTextAlign('center')"
+              data-testid="align-center"
+              title="Center align"
+              aria-label="Center align"
+            >
+              <lucide-icon name="align-center" class="i-14"></lucide-icon>
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="textAlignOf(s) === 'right'"
+              (click)="onTextAlign('right')"
+              data-testid="align-right"
+              title="Right align"
+              aria-label="Right align"
+            >
+              <lucide-icon name="align-right" class="i-14"></lucide-icon>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Style</label>
+          <div class="seg">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="isItalicOf(s)"
+              (click)="onItalicToggle()"
+              data-testid="text-italic"
+              title="Italic"
+              aria-label="Italic"
+            >
+              <lucide-icon name="italic" class="i-14"></lucide-icon>
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="isUnderlineOf(s)"
+              (click)="onUnderlineToggle()"
+              data-testid="text-underline"
+              title="Underline"
+              aria-label="Underline"
+            >
+              <lucide-icon name="underline" class="i-14"></lucide-icon>
+            </button>
+          </div>
+        </div>
+      }
+      @if (
+        isTextual(s.type) ||
+        s.type === 'divider' ||
+        s.type === 'list' ||
+        hasIcon(s.type) ||
+        hasBorder(s.type) ||
+        hasBackground(s.type)
+      ) {
+        <div class="field">
+          <label>{{
+            hasBorder(s.type)
+              ? 'Border color'
+              : hasBackground(s.type)
+                ? 'Background color'
+                : 'Color'
+          }}</label>
+          <div class="color-row">
+            <label
+              class="color-swatch"
+              [class.empty]="!s.color"
+              [attr.data-testid]="'inspect-color'"
+            >
+              <input
+                type="color"
+                [value]="s.color || '#0a0a0a'"
+                (change)="onColorInput($any($event.target).value)"
+              />
+              <span class="color-chip" [style.background]="s.color || null"></span>
+            </label>
+            <input
+              type="text"
+              class="color-hex mono"
+              [value]="s.color || ''"
+              placeholder="default"
+              (change)="onColorInput($any($event.target).value)"
+            />
+            @if (s.color) {
+              <button
+                type="button"
+                class="btn ghost xs"
+                (click)="onColorClear()"
+                title="Reset color"
+              >
+                <lucide-icon name="x" class="i-12 i--block"></lucide-icon>
+              </button>
+            }
+          </div>
+          <div class="color-palette" aria-label="Color presets">
+            <button
+              type="button"
+              class="palette-chip none"
+              [class.active]="!s.color"
+              (click)="onColorClear()"
+              title="No color (default)"
+              aria-label="No color"
+            ></button>
+            @for (c of colorPresets; track c) {
+              <button
+                type="button"
+                class="palette-chip"
+                [class.active]="s.color?.toLowerCase() === c.toLowerCase()"
+                [style.background]="c"
+                (click)="onColorInput(c)"
+                [title]="c"
+                [attr.aria-label]="'Set color ' + c"
+                [attr.data-testid]="'preset-' + c.replace('#', '')"
+              ></button>
+            }
+          </div>
+        </div>
+      }
+      @if (hasCheckedState(s.type)) {
+        <div class="field">
+          <label>State</label>
+          <div class="seg">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="isCheckedOf(s)"
+              (click)="onChecked(true)"
+              data-testid="checked-on"
+            >
+              Checked
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="!isCheckedOf(s)"
+              (click)="onChecked(false)"
+              data-testid="checked-off"
+            >
+              Unchecked
+            </button>
+          </div>
+        </div>
+      }
+      @if (s.type === 'button') {
+        <div class="field">
+          <label>Style</label>
+          <div class="seg seg-3">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="buttonVariantOf(s) === 'primary'"
+              (click)="onButtonVariant('primary')"
+              data-testid="btn-primary"
+            >
+              Primary
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="buttonVariantOf(s) === 'secondary'"
+              (click)="onButtonVariant('secondary')"
+              data-testid="btn-secondary"
+            >
+              Secondary
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="buttonVariantOf(s) === 'tertiary'"
+              (click)="onButtonVariant('tertiary')"
+              data-testid="btn-tertiary"
+            >
+              Tertiary
+            </button>
+          </div>
+        </div>
+      }
+      @if (hasBorder(s.type)) {
+        <div class="field">
+          <label>Border style</label>
+          <div class="seg seg-3">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="borderStyleOf(s) === 'solid'"
+              (click)="onBorderStyle('solid')"
+              data-testid="border-style-solid"
+            >
+              Solid
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="borderStyleOf(s) === 'dashed'"
+              (click)="onBorderStyle('dashed')"
+              data-testid="border-style-dashed"
+            >
+              Dashed
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="borderStyleOf(s) === 'dotted'"
+              (click)="onBorderStyle('dotted')"
+              data-testid="border-style-dotted"
+            >
+              Dotted
+            </button>
+          </div>
+        </div>
+      }
+      @if (s.type === 'divider') {
+        <div class="field">
+          <label>Orientation</label>
+          <div class="seg">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="dividerOrientation(s) === 'h'"
+              (click)="onDividerOrientation('h')"
+              data-testid="divider-h"
+            >
+              Horizontal
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="dividerOrientation(s) === 'v'"
+              (click)="onDividerOrientation('v')"
+              data-testid="divider-v"
+            >
+              Vertical
+            </button>
+          </div>
+        </div>
+        <div class="field rotation-field">
+          <label>
+            <span>Stroke</span>
+            <span class="rotation-value mono small">{{ dividerStrokeOf(s) }}px</span>
+          </label>
+          <div class="slider">
+            <input
+              type="range"
+              min="1"
+              max="16"
+              step="1"
+              [value]="dividerStrokeOf(s)"
+              (input)="onDividerStroke($any($event.target).value)"
+              data-testid="divider-stroke"
+            />
+          </div>
+        </div>
+        <div class="field">
+          <label>Style</label>
+          <div class="seg seg-3">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="dividerStyleOf(s) === 'solid'"
+              (click)="onDividerStyle('solid')"
+              data-testid="divider-style-solid"
+            >
+              Solid
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="dividerStyleOf(s) === 'dashed'"
+              (click)="onDividerStyle('dashed')"
+              data-testid="divider-style-dashed"
+            >
+              Dashed
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.active]="dividerStyleOf(s) === 'dotted'"
+              (click)="onDividerStyle('dotted')"
+              data-testid="divider-style-dotted"
+            >
+              Dotted
+            </button>
+          </div>
+        </div>
+      }
+      <div class="field">
+        <label>Position</label>
+        <div class="two">
+          <div class="ctrl">
+            <span class="mono small mute">X</span
+            ><input
+              type="number"
+              [value]="s.x"
+              (input)="onNumber('x', $any($event.target).value)"
+            />
+          </div>
+          <div class="ctrl">
+            <span class="mono small mute">Y</span
+            ><input
+              type="number"
+              [value]="s.y"
+              (input)="onNumber('y', $any($event.target).value)"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Size</label>
+        <div class="two">
+          <div class="ctrl">
+            <span class="mono small mute">W</span
+            ><input
+              type="number"
+              [value]="s.w"
+              [disabled]="s.type === 'divider' && dividerOrientation(s) === 'v'"
+              (input)="onNumber('w', $any($event.target).value)"
+            />
+          </div>
+          <div class="ctrl">
+            <span class="mono small mute">H</span
+            ><input
+              type="number"
+              [value]="s.h"
+              [disabled]="s.type === 'divider' && dividerOrientation(s) === 'h'"
+              (input)="onNumber('h', $any($event.target).value)"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="field rotation-field">
+        <label>
+          <span>Rotation</span>
+          <span class="rotation-value mono small">{{ s.rotation ?? 0 }}°</span>
+        </label>
+        <div class="slider">
+          <datalist id="rotation-ticks">
+            <option value="45"></option>
+            <option value="90"></option>
+            <option value="135"></option>
+            <option value="180"></option>
+            <option value="225"></option>
+            <option value="270"></option>
+            <option value="315"></option>
+          </datalist>
+          <input
+            type="range"
+            min="0"
+            max="360"
+            step="1"
+            list="rotation-ticks"
+            [value]="s.rotation ?? 0"
+            (input)="onNumber('rotation', $any($event.target).value)"
+            data-testid="inspect-rotation"
+          />
+          <div class="slider-ticks" aria-hidden="true">
+            <span class="major edge-start" style="left: 0%">0</span>
+            <span class="major" style="left: 12.5%">45</span>
+            <span class="major" style="left: 25%">90</span>
+            <span class="major" style="left: 37.5%">135</span>
+            <span class="major" style="left: 50%">180</span>
+            <span class="major" style="left: 62.5%">225</span>
+            <span class="major" style="left: 75%">270</span>
+            <span class="major" style="left: 87.5%">315</span>
+            <span class="major edge-end" style="left: 100%">360</span>
+          </div>
+        </div>
+      </div>
+      <div class="inspector-actions">
+        <button type="button" class="btn ghost sm" (click)="onDuplicate()">Duplicate</button>
+        <button type="button" class="btn ghost sm danger" (click)="onDelete()">Delete</button>
+      </div>
+    } @else {
+      <div class="empty-inspector">
+        <lucide-icon name="sparkles" class="i-18"></lucide-icon>
+        <p class="muted small">Nothing selected.</p>
+        <p class="muted small">
+          Drag a component onto the canvas, or describe a screen in the AI bar.
+        </p>
+      </div>
+      <mt-grid-settings
+        [config]="gridConfig()"
+        (configChange)="onGridConfigChange($event)"
+      ></mt-grid-settings>
+    }
+  </div>
+</aside>
