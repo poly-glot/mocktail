@@ -15,10 +15,10 @@
     "statements": 83.9,
     "branches": 50,
     "functions": 89.19,
-    "lines": 88.08
+    "lines": 89.1
   },
   "packages/tenant": {
-    "statements": 86.27,
+    "statements": 87.45,
     "branches": 59.79,
     "functions": 85.11,
     "lines": 91.16
