@@ -35,7 +35,22 @@ pub const GrpcError = error{
     ReaderInitFailed,
     OutOfMemory,
     RpcFailed,
+    TooManyMetadata,
 };
+
+/// Caller-supplied initial-metadata entry. Both fields are null-terminated so
+/// they can be passed straight to `grpc_slice_from_static_string`; the caller
+/// owns the memory and must keep it alive for the duration of the RPC.
+pub const Metadata = struct {
+    key: [:0]const u8,
+    value: [:0]const u8,
+};
+
+/// Hard cap on the number of initial-metadata entries we send. One slot is
+/// reserved for the auth header; the rest are caller-supplied (e.g. Firestore's
+/// `x-goog-request-params` routing header). Sized to leave headroom without
+/// growing the per-call stack frame.
+const MAX_INITIAL_METADATA: usize = 8;
 
 pub const GrpcChannel = struct {
     channel: *c.grpc_channel,
@@ -154,6 +169,7 @@ pub const GrpcChannel = struct {
         request: []const u8,
         arena: Allocator,
         timeout_seconds: i64,
+        extra_metadata: []const Metadata,
     ) GrpcError![]const u8 {
         self.mutex.lock();
         const call = self.createCall(cq, method, makeDeadline(timeout_seconds)) catch |err| {
@@ -171,13 +187,35 @@ pub const GrpcChannel = struct {
         defer c.grpc_byte_buffer_destroy(req_bb);
         c.grpc_slice_unref(req_slice);
 
-        var auth = self.buildAuthMetadata();
+        const auth = self.buildAuthMetadata();
+
+        // Combined initial metadata: [auth?] ++ extra. The slices reference
+        // memory owned by the caller (Config) or static strings, so they remain
+        // valid for the lifetime of the batch (the function blocks on pollCq).
+        var md_buf: [MAX_INITIAL_METADATA]c.grpc_metadata = std.mem.zeroes([MAX_INITIAL_METADATA]c.grpc_metadata);
+        const md_total = auth.count + extra_metadata.len;
+        if (md_total > md_buf.len) {
+            self.mutex.unlock();
+            return error.TooManyMetadata;
+        }
+        var md_idx: usize = 0;
+        if (auth.count > 0) {
+            md_buf[md_idx] = auth.md[0];
+            md_idx += 1;
+        }
+        for (extra_metadata) |em| {
+            var md = std.mem.zeroes(c.grpc_metadata);
+            md.key = c.grpc_slice_from_static_string(em.key.ptr);
+            md.value = c.grpc_slice_from_static_string(em.value.ptr);
+            md_buf[md_idx] = md;
+            md_idx += 1;
+        }
 
         var ops: [6]c.grpc_op = std.mem.zeroes([6]c.grpc_op);
 
         ops[0].op = c.GRPC_OP_SEND_INITIAL_METADATA;
-        ops[0].data.send_initial_metadata.count = auth.count;
-        ops[0].data.send_initial_metadata.metadata = if (auth.count > 0) &auth.md else null;
+        ops[0].data.send_initial_metadata.count = md_total;
+        ops[0].data.send_initial_metadata.metadata = if (md_total > 0) &md_buf else null;
 
         ops[1].op = c.GRPC_OP_SEND_MESSAGE;
         ops[1].data.send_message.send_message = req_bb;
