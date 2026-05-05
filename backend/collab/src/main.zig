@@ -294,9 +294,10 @@ pub const Server = struct {
             }
             // Cloud Run sends SIGTERM ~10s before it kills the container. The
             // handler flips the flag; we drain and exit cleanly here.
+            // drainAndExit terminates the process via exit_group; control
+            // does not return.
             if (g_shutdown_requested.load(.acquire)) {
                 self.drainAndExit();
-                return;
             }
             const n = posix.epoll_wait(self.epoll_fd, &events, EPOLL_WAIT_MS);
             for (events[0..n]) |ev| {
@@ -411,8 +412,13 @@ pub const Server = struct {
 
     /// Best-effort drain: flush every pending room regardless of triggers so
     /// in-flight edits don't die on SIGTERM. Bounded by SHUTDOWN_DRAIN_BUDGET_NS
-    /// so Cloud Run's 10s grace isn't exceeded.
-    fn drainAndExit(self: *Server) void {
+    /// so Cloud Run's 10s grace isn't exceeded. Terminates the process directly
+    /// via exit_group; never returns. Bypasses libc's atexit chain because
+    /// libgrpc registers handlers that wait on internal threads, and at least
+    /// one of those threads (TLS subchannel poller) does not unblock during
+    /// shutdown — we observed Cloud Run instances hanging after emitting
+    /// `event=self_kill_initiated` until SIGKILL fired at the 10s grace.
+    fn drainAndExit(self: *Server) noreturn {
         if (self.fs_client == null) {
             // Health-check-only deploys (no Firestore client) still need to
             // emit drain_completed so the verification recipe in README's
@@ -422,7 +428,7 @@ pub const Server = struct {
                 "event=drain_completed rooms_drained=0 rooms_skipped=0 elapsed_ms=0 budget_exceeded=false\n",
                 .{},
             );
-            return;
+            linux.exit_group(0);
         }
         if (g_kill_reason == .sigterm) {
             var pending_fields: usize = 0;
@@ -464,6 +470,7 @@ pub const Server = struct {
                 if (budget_exceeded) "true" else "false",
             },
         );
+        linux.exit_group(0);
     }
 
     // ----- slot bookkeeping ------------------------------------------------
