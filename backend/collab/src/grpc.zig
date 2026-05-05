@@ -187,7 +187,7 @@ pub const GrpcChannel = struct {
         defer c.grpc_byte_buffer_destroy(req_bb);
         c.grpc_slice_unref(req_slice);
 
-        var auth = self.buildAuthMetadata();
+        const auth = self.buildAuthMetadata();
 
         // Combined initial metadata: [auth?] ++ extra. The slices reference
         // memory owned by the caller (Config) or static strings, so they remain
