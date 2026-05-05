@@ -16,13 +16,15 @@ RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN case "$TARGETARCH" in \
-      amd64) ZIG_TARGET=x86_64-linux ;; \
-      arm64) ZIG_TARGET=aarch64-linux ;; \
+      amd64) ZIG_TARGET=x86_64-linux; ZIG_CPU=x86_64_v3 ;; \
+      arm64) ZIG_TARGET=aarch64-linux; ZIG_CPU=baseline ;; \
       *)     echo "unsupported arch: $TARGETARCH" && exit 1 ;; \
     esac \
     && curl -sL "https://ziglang.org/download/${ZIG_VERSION}/zig-${ZIG_TARGET}-${ZIG_VERSION}.tar.xz" \
        | tar -xJ -C /usr/local \
-    && ln -s "/usr/local/zig-${ZIG_TARGET}-${ZIG_VERSION}/zig" /usr/local/bin/zig
+    && ln -s "/usr/local/zig-${ZIG_TARGET}-${ZIG_VERSION}/zig" /usr/local/bin/zig \
+    && echo "${ZIG_TARGET}" > /zig-target \
+    && echo "${ZIG_CPU}" > /zig-cpu
 
 WORKDIR /src
 
@@ -67,7 +69,10 @@ RUN PROTO_TMP=$(mktemp -d) \
 COPY build.zig build.zig.zon ./
 COPY src ./src
 
-RUN zig build -Doptimize=ReleaseSafe \
+# Pin -Dtarget/-Dcpu so the binary doesn't bake in host-runner CPU features
+# (e.g. AVX-512/GFNI) that Cloud Run's amd64 fleet rejects with SIGILL.
+RUN ZIG_TARGET=$(cat /zig-target) && ZIG_CPU=$(cat /zig-cpu) \
+    && zig build -Doptimize=ReleaseSafe -Dtarget=${ZIG_TARGET} -Dcpu=${ZIG_CPU} \
     && cp zig-out/bin/mocktail /mocktail
 
 # ---- Runtime ---------------------------------------------------------------
