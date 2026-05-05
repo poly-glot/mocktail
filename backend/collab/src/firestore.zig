@@ -18,6 +18,10 @@ pub const Config = struct {
     project: []const u8,
     host: [:0]const u8,
     database: [:0]const u8, // "projects/<id>/databases/<name>"; <name>=(default) unless FIRESTORE_DB is set
+    // `x-goog-request-params` value, e.g. "project_id=foo&database_id=mocktail".
+    // Required for named databases; without it the backend rejects RPCs with
+    // INVALID_ARGUMENT "Missing routing header".
+    routing_params: [:0]const u8,
     use_tls: bool,
     allocator: std.mem.Allocator,
 
@@ -57,11 +61,20 @@ pub const Config = struct {
             .{ project_dup, db_name },
             0,
         );
+        errdefer allocator.free(database_dup);
+
+        const routing_dup = try std.fmt.allocPrintSentinel(
+            allocator,
+            "project_id={s}&database_id={s}",
+            .{ project_dup, db_name },
+            0,
+        );
 
         return .{
             .project = project_dup,
             .host = host_dup,
             .database = database_dup,
+            .routing_params = routing_dup,
             .use_tls = use_tls,
             .allocator = allocator,
         };
@@ -71,6 +84,7 @@ pub const Config = struct {
         self.allocator.free(self.project);
         self.allocator.free(self.host);
         self.allocator.free(self.database);
+        self.allocator.free(self.routing_params);
     }
 
     fn parseBool(maybe: ?[]const u8) bool {
@@ -105,6 +119,14 @@ pub const Client = struct {
         self.config.deinit();
     }
 
+    /// Initial metadata required for named-database routing. Backed by Config-
+    /// owned memory so the slices remain valid for the duration of any RPC.
+    fn routingMetadata(self: *const Client) [1]grpc.Metadata {
+        return .{
+            .{ .key = "x-goog-request-params", .value = self.config.routing_params },
+        };
+    }
+
     /// `/google.firestore.v1.Firestore/GetDocument`
     /// `request` is a pre-encoded GetDocumentRequest protobuf.
     pub fn getDocument(
@@ -113,12 +135,14 @@ pub const Client = struct {
         request: []const u8,
         arena: std.mem.Allocator,
     ) grpc.GrpcError![]const u8 {
+        const md = self.routingMetadata();
         return self.channel.callUnary(
             cq,
             "/google.firestore.v1.Firestore/GetDocument",
             request,
             arena,
             30,
+            &md,
         );
     }
 
@@ -129,12 +153,14 @@ pub const Client = struct {
         request: []const u8,
         arena: std.mem.Allocator,
     ) grpc.GrpcError![]const u8 {
+        const md = self.routingMetadata();
         return self.channel.callUnary(
             cq,
             "/google.firestore.v1.Firestore/Commit",
             request,
             arena,
             30,
+            &md,
         );
     }
 };
@@ -192,5 +218,35 @@ test "Config FIRESTORE_DB selects a named database" {
     try std.testing.expectEqualStrings(
         "projects/demo-mocktail/databases/mocktail",
         cfg.database,
+    );
+}
+
+test "Config emits routing_params for named-database backend routing" {
+    const allocator = std.testing.allocator;
+    var env = std.process.EnvMap.init(allocator);
+    defer env.deinit();
+    try env.put("FIRESTORE_PROJECT_ID", "firebase-cloud-491613");
+    try env.put("FIRESTORE_DB", "mocktail");
+
+    var cfg = try Config.fromEnvMap(allocator, &env);
+    defer cfg.deinit();
+
+    try std.testing.expectEqualStrings(
+        "project_id=firebase-cloud-491613&database_id=mocktail",
+        cfg.routing_params,
+    );
+}
+
+test "Config routing_params falls back to (default) when FIRESTORE_DB unset" {
+    const allocator = std.testing.allocator;
+    var env = std.process.EnvMap.init(allocator);
+    defer env.deinit();
+
+    var cfg = try Config.fromEnvMap(allocator, &env);
+    defer cfg.deinit();
+
+    try std.testing.expectEqualStrings(
+        "project_id=demo-mocktail&database_id=(default)",
+        cfg.routing_params,
     );
 }
