@@ -171,7 +171,13 @@ export class CollabService {
     const path = tenantId
       ? `/api/collab/${encodeURIComponent(tenantId)}/${encodeURIComponent(projectId)}`
       : `/api/collab/${encodeURIComponent(projectId)}`;
-    const url = `${scheme}//${location.host}${path}`;
+    // Firebase Hosting's edge mangles WebSocket upgrade headers when proxying
+    // through `/api/**` rewrites to Cloud Run, returning 400. Bypass Hosting
+    // for WS by hitting the run.app URL directly. Same-origin XHR is unchanged.
+    const wsHost =
+      (globalThis as unknown as { __MOCKTAIL_WS_HOST__?: string }).__MOCKTAIL_WS_HOST__ ??
+      location.host;
+    const url = `${scheme}//${wsHost}${path}`;
     const ws = new WebSocket(url);
     this._socket = ws;
     ws.addEventListener('open', () => {

@@ -20,6 +20,11 @@
       window.__FIREBASE_PROJECT_ID__ = 'firebase-cloud-491613';
       window.__FIREBASE_APP_ID__ = '1:563789376070:web:10ea1e842552b494f07847';
 
+      // Firebase Hosting's edge breaks WS upgrades on /api/** rewrites; bypass
+      // it by sending wss:// straight to Cloud Run. Replace with collab.<host>
+      // once a domain mapping or load balancer fronts the run.app URL.
+      window.__MOCKTAIL_WS_HOST__ = 'mocktail-4peyon4phq-nw.a.run.app';
+
       // Enable emulator-backed Firebase config when served from localhost or
       // from the Firebase hosting emulator (port 5000). Also enable when we're
       // inside the Angular dev server on 4200.
