@@ -23,7 +23,6 @@ RUN case "$TARGETARCH" in \
     && curl -sL "https://ziglang.org/download/${ZIG_VERSION}/zig-${ZIG_TARGET}-${ZIG_VERSION}.tar.xz" \
        | tar -xJ -C /usr/local \
     && ln -s "/usr/local/zig-${ZIG_TARGET}-${ZIG_VERSION}/zig" /usr/local/bin/zig \
-    && echo "${ZIG_TARGET}" > /zig-target \
     && echo "${ZIG_CPU}" > /zig-cpu
 
 WORKDIR /src
@@ -69,10 +68,11 @@ RUN PROTO_TMP=$(mktemp -d) \
 COPY build.zig build.zig.zon ./
 COPY src ./src
 
-# Pin -Dtarget/-Dcpu so the binary doesn't bake in host-runner CPU features
+# Pin -Dcpu so the binary doesn't bake in host-runner CPU features
 # (e.g. AVX-512/GFNI) that Cloud Run's amd64 fleet rejects with SIGILL.
-RUN ZIG_TARGET=$(cat /zig-target) && ZIG_CPU=$(cat /zig-cpu) \
-    && zig build -Doptimize=ReleaseSafe -Dtarget=${ZIG_TARGET} -Dcpu=${ZIG_CPU} \
+# Keep target native so zig still auto-discovers system libs under /usr.
+RUN ZIG_CPU=$(cat /zig-cpu) \
+    && zig build -Doptimize=ReleaseSafe -Dcpu=${ZIG_CPU} \
     && cp zig-out/bin/mocktail /mocktail
 
 # ---- Runtime ---------------------------------------------------------------
