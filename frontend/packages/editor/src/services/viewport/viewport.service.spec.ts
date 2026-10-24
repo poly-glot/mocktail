@@ -231,21 +231,9 @@ describe('EditorViewportService', () => {
     });
   });
 
-  describe('getBoardRect / getCanvasRect', () => {
-    it('returns null for both when neither element has been registered', () => {
+  describe('getBoardRect', () => {
+    it('returns null when the board has not been registered', () => {
       expect(svc.getBoardRect()).toBeNull();
-      expect(svc.getCanvasRect()).toBeNull();
-    });
-
-    it('returns a live rect from the canvas element once registered', () => {
-      const canvas = makeElement({ left: 10, top: 20, width: 800, height: 600 });
-      svc.setCanvasEl(canvas as unknown as HTMLDivElement);
-      const rect = svc.getCanvasRect();
-      expect(rect).not.toBeNull();
-      expect(rect!.left).toBe(10);
-      expect(rect!.top).toBe(20);
-      expect(rect!.width).toBe(800);
-      expect(rect!.height).toBe(600);
     });
 
     it('returns a live rect from the board element once registered', () => {
@@ -266,7 +254,6 @@ describe('EditorViewportService', () => {
       svc.setBoardEl(board as unknown as HTMLDivElement);
       svc.setCanvasEl(null);
       svc.setBoardEl(null);
-      expect(svc.getCanvasRect()).toBeNull();
       expect(svc.getBoardRect()).toBeNull();
     });
   });

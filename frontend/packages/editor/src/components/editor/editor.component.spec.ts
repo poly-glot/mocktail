@@ -62,27 +62,19 @@ describe('EditorComponent', () => {
       'subscribeElements',
       'subscribeComments',
       'subscribeProjectDoc',
-      'upsertElement',
-      'deleteElement',
       'writeActivity',
       'updateGridConfig',
       'addPage',
       'deletePage',
-      'addElements',
-      'replaceElements',
       'addComment',
       'resolveComment',
-      'patchElements',
     ]);
     projects.subscribePages.and.returnValue(() => undefined);
     projects.subscribeElements.and.returnValue(() => undefined);
     projects.subscribeComments.and.returnValue(() => undefined);
     projects.subscribeProjectDoc.and.returnValue(() => undefined);
-    projects.upsertElement.and.returnValue(Promise.resolve());
-    projects.deleteElement.and.returnValue(Promise.resolve());
     projects.writeActivity.and.returnValue(Promise.resolve());
     projects.updateGridConfig.and.returnValue(Promise.resolve());
-    projects.patchElements.and.returnValue(Promise.resolve());
 
     collab = {
       connected: signal(false),
@@ -186,23 +178,6 @@ describe('EditorComponent', () => {
     expect(cmp.isTextual('checkbox')).toBe(false);
   });
 
-  it('hasTextField excludes divider/image/rect/checkbox/toggle/charts/phone', () => {
-    expect(cmp.hasTextField('divider')).toBe(false);
-    expect(cmp.hasTextField('image')).toBe(false);
-    expect(cmp.hasTextField('rect')).toBe(false);
-    expect(cmp.hasTextField('checkbox')).toBe(false);
-    expect(cmp.hasTextField('toggle')).toBe(false);
-    expect(cmp.hasTextField('bar-chart')).toBe(false);
-    expect(cmp.hasTextField('donut')).toBe(false);
-    expect(cmp.hasTextField('phone-frame')).toBe(false);
-    expect(cmp.hasTextField('text')).toBe(true);
-    expect(cmp.hasTextField('heading')).toBe(true);
-    expect(cmp.hasTextField('link')).toBe(true);
-    expect(cmp.hasTextField('button')).toBe(true);
-    expect(cmp.hasTextField('tag')).toBe(true);
-    expect(cmp.hasTextField('card')).toBe(true);
-  });
-
   it('iconForType resolves known icons (via layers-panel util)', () => {
     expect(iconForType('heading')).toBe('heading-1');
     expect(iconForType('link')).toBe('link');
@@ -290,7 +265,6 @@ describe('EditorComponent', () => {
     await editorSvc.setColor('t1', 'p1', '#12345'); // 5 chars — invalid
     await editorSvc.setColor('t1', 'p1', 'red'); // named color — not hex
     expect(collab.sendEdit).not.toHaveBeenCalled();
-    expect(projects.upsertElement).not.toHaveBeenCalled();
   });
 
   it('setColor with empty value delegates to clearColor (forwarded as sendDeleteFields)', async () => {
@@ -343,7 +317,7 @@ describe('EditorComponent', () => {
   it('reorderLayer: no-op when fromId === toId', async () => {
     cmp.elements.set([makeEl({ id: 'a', type: 'rect', zIndex: 1 })]);
     await cmp.reorderLayer('a', 'a', 'above');
-    expect(projects.patchElements).not.toHaveBeenCalled();
+    expect(collab.sendEdit).not.toHaveBeenCalled();
   });
 
   it('onLayerReorder delegates to reorderLayer', async () => {
@@ -552,7 +526,6 @@ describe('EditorComponent', () => {
     expect(updated.x).toBe(42);
     expect(collab.sendEdit).toHaveBeenCalledWith('s1', { x: 42 });
     expect(collab.flushPendingEdits).toHaveBeenCalled();
-    expect(projects.upsertElement).not.toHaveBeenCalled();
   });
 
   it('updateSelected is a no-op when nothing selected', () => {
@@ -709,7 +682,7 @@ describe('EditorComponent', () => {
 
   it('onCanvasPointerCancel clears drag/resize/rotate state', () => {
     fakeDrag('x');
-    cmp.onCanvasPointerCancel();
+    cmp.cancelInteractions();
     expect(drr.drag).toBeNull();
   });
 

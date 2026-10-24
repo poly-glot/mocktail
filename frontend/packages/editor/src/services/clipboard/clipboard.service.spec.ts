@@ -43,11 +43,4 @@ describe('EditorClipboardService', () => {
     svc.put(el({ id: 'b' }));
     expect(svc.peek()?.id).toBe('b');
   });
-
-  it('clear empties the clipboard and flips canPaste back to false', () => {
-    svc.put(el());
-    svc.clear();
-    expect(svc.peek()).toBeNull();
-    expect(svc.canPaste()).toBeFalse();
-  });
 });

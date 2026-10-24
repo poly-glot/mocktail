@@ -8,12 +8,6 @@ export interface IAiGenerated {
   model?: string;
 }
 
-export interface IAiReviewIssue {
-  severity: 'info' | 'warn' | 'error';
-  message: string;
-  elementId?: string;
-}
-
 @Injectable({ providedIn: 'root' })
 export class AiService {
   public readonly busy = signal(false);
@@ -39,16 +33,5 @@ export class AiService {
     } finally {
       this.busy.set(false);
     }
-  }
-
-  public async review(elements: IWireElement[]): Promise<IAiReviewIssue[]> {
-    const res = await fetch('/api/ai/review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ elements }),
-    });
-    if (!res.ok) return [];
-    const data = await res.json().catch(() => ({ issues: [] }));
-    return (data.issues ?? []) as IAiReviewIssue[];
   }
 }

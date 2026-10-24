@@ -16,19 +16,17 @@ import {
   ElementType,
   IWireElement,
   ProjectApiService,
-  buttonVariantOf as buttonVariantOfFn,
-  dividerOrientation as dividerOrientationFn,
-  dividerStyleOf as dividerStyleOfFn,
-  hasBackground as hasBackgroundFn,
-  hasBorder as hasBorderFn,
-  hasFontSize as hasFontSizeFn,
-  hasRichText as hasRichTextFn,
-  hasTextField as hasTextFieldFn,
-  isCheckedOf as isCheckedOfFn,
-  isTextual as isTextualFn,
+  buttonVariantOf,
+  dividerOrientation,
+  hasBackground,
+  hasBorder,
+  hasFontSize,
+  isCheckedOf,
+  isTextual,
 } from '@mocktail/projects';
 import { DialogService } from '@mocktail/cdk';
-import { CanvasGestureStore, HandleDir } from '../../services/canvas-gesture/canvas-gesture.store';
+import { CanvasGestureStore } from '../../services/canvas-gesture/canvas-gesture.store';
+import { HandleDir } from '../../services/canvas-gesture/snapping';
 import { EditorAiOrchestratorService } from '../../services/ai-orchestrator/ai-orchestrator.service';
 import { EditorClipboardService } from '../../services/clipboard/clipboard.service';
 import { EditorCollabSyncService } from '../../services/collab-sync/collab-sync.service';
@@ -73,7 +71,7 @@ import { FontSizePxPipe } from '../../pipes/font-size-px.pipe';
 import { HeadingFontSizePipe } from '../../pipes/heading-font-size.pipe';
 import { PeerInitialsPipe } from '../../pipes/peer-initials.pipe';
 import { TransformForPipe } from '../../pipes/transform-for.pipe';
-import { GridOverlayComponent, computeColumnRegions } from '../grid-overlay/grid-overlay.component';
+import { GridOverlayComponent } from '../grid-overlay/grid-overlay.component';
 import { ImageLibraryPanelComponent } from '../image-library-panel/image-library-panel.component';
 import { IPaletteItem, PALETTES, PaletteComponent } from '../palette/palette.component';
 import { IReorderEvent, LayersPanelComponent } from '../layers-panel/layers-panel.component';
@@ -121,9 +119,6 @@ import {
 } from 'lucide-angular';
 
 import { ICON_PROVIDER_MAP } from '../icon-picker/icon-registry';
-
-/* HandleDir and IGuideLine are now provided by CanvasGestureStore */
-/* IPalette, IPaletteItem, PALETTES are now provided by PaletteComponent */
 
 @Component({
   selector: 'mk-editor',
@@ -218,8 +213,6 @@ import { ICON_PROVIDER_MAP } from '../icon-picker/icon-registry';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EditorComponent implements OnInit {
-  public readonly palettes = PALETTES;
-  public readonly tool = signal<'select' | 'hand'>('select');
   public readonly aiPrompt = signal('');
 
   private readonly _projects = inject(ProjectApiService);
@@ -248,10 +241,8 @@ export class EditorComponent implements OnInit {
   public readonly pid = this._session.pid;
   public readonly pages = this._session.pages;
   public readonly activePageId = this._session.activePageId;
-  public readonly comments = this._session.comments;
   public readonly gridConfig = this._session.gridConfig;
   public readonly activePage = this._session.activePage;
-  public readonly openComments = this._session.openComments;
   public readonly pageComments = this._session.pageComments;
   public readonly elements = this._elsState.list;
   public readonly dragGuides = this._gesture.guides;
@@ -275,15 +266,9 @@ export class EditorComponent implements OnInit {
   public readonly selected = computed(
     () => this.elements().find((e) => e.id === this.selectedId()) ?? null,
   );
-  public readonly selectedElements = computed<readonly IWireElement[]>(() => {
-    const ids = this.allSelectedIdSet();
-    if (ids.size === 0) return [];
-    return this.elements().filter((e) => ids.has(e.id));
-  });
   public readonly aiBusy = this._ai.busy;
   public readonly aiNotes = this._ai.lastNotes;
   public readonly aiSource = this._ai.lastSource;
-  public readonly collabCursors = this._collab.cursors;
   public readonly collabConnected = this._collab.connected;
 
   public readonly peers = computed<ICursorState[]>(() =>
@@ -295,10 +280,6 @@ export class EditorComponent implements OnInit {
     [...this.elements()].sort((a, b) => b.zIndex - a.zIndex),
   );
   public readonly canPaste = this._clipboard.canPaste;
-
-  public readonly columnRegions = computed<{ left: number; width: number }[]>(() =>
-    computeColumnRegions(this.gridConfig(), this.activePage()?.width ?? 1200),
-  );
 
   public readonly canvasEl = viewChild<ElementRef<HTMLDivElement>>('canvasEl');
   public readonly boardEl = viewChild<ElementRef<HTMLDivElement>>('boardEl');
@@ -458,12 +439,12 @@ export class EditorComponent implements OnInit {
     this._gesture.onCanvasPointerMove(ev);
   }
 
-  public onCanvasPointerCancel(): void {
-    this._gesture.onCanvasPointerCancel();
-  }
-
   public onCanvasPointerUp(): void {
     this._gesture.onCanvasPointerUp();
+  }
+
+  public cancelInteractions(): void {
+    this._gesture.cancel();
   }
 
   public deleteSelected(): Promise<void> {
@@ -586,14 +567,6 @@ export class EditorComponent implements OnInit {
     this._panels.toggleRight();
   }
 
-  public trackEl = (_: number, e: IWireElement): string => e.id;
-  public trackCursor = (_: number, c: ICursorState): string => c.userId;
-  public trackPeer = (_: number, c: ICursorState): string => c.userId;
-
-  public cursorsList(): ICursorState[] {
-    return Array.from(this._collab.cursors().values());
-  }
-
   public readonly shortcutsApi: IEditorShortcutsApi = {
     isEditing: () => this.editingId() != null,
     canPaste: () => this._clipboard.canPaste(),
@@ -613,7 +586,7 @@ export class EditorComponent implements OnInit {
     deleteSelected: () => {
       void this.deleteSelected();
     },
-    cancelInteractions: () => this.onCanvasPointerCancel(),
+    cancelInteractions: () => this.cancelInteractions(),
     clearSelection: () => {
       this.selectedId.set(null);
       this.extraSelectedIds.set(new Set());
@@ -628,32 +601,19 @@ export class EditorComponent implements OnInit {
     this._collab.sendSelection(elId);
   }
 
-  public dividerOrientation = dividerOrientationFn;
-  public dividerStyleOf = dividerStyleOfFn;
-  public hasBorder = hasBorderFn;
-  public hasBackground = hasBackgroundFn;
-
-  public hasRichText = hasRichTextFn;
-  public hasFontSize = hasFontSizeFn;
-  public buttonVariantOf = buttonVariantOfFn;
-
-  public isTextual = isTextualFn;
-  public hasTextField = hasTextFieldFn;
-
-  public isCheckedOf = isCheckedOfFn;
+  public readonly dividerOrientation = dividerOrientation;
+  public readonly hasBorder = hasBorder;
+  public readonly hasBackground = hasBackground;
+  public readonly hasFontSize = hasFontSize;
+  public readonly buttonVariantOf = buttonVariantOf;
+  public readonly isTextual = isTextual;
+  public readonly isCheckedOf = isCheckedOf;
 
   public handleDirsFor(el: IWireElement): readonly HandleDir[] {
     if (el.type === 'divider') {
       return this.dividerOrientation(el) === 'h' ? (['e', 'w'] as const) : (['n', 's'] as const);
     }
     return ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const;
-  }
-
-  public startEditingSelected(): void {
-    const sel = this.selected();
-    if (!sel || sel.locked) return;
-    if (!this.isTextual(sel.type) && sel.type !== 'list') return;
-    this._inline.begin(sel.id);
   }
 
   public onInlineEditDblClick(ev: MouseEvent, el: IWireElement): void {

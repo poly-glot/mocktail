@@ -50,7 +50,7 @@ describe('EditorCollabSyncService', () => {
         {
           provide: ProjectApiService,
           useValue: {
-            upsertElement: jasmine.createSpy().and.resolveTo(undefined),
+            writeActivity: jasmine.createSpy().and.resolveTo(undefined),
           } as Partial<ProjectApiService>,
         },
         EditorCollabSyncService,

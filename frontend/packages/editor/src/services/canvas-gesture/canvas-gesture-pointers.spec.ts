@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { CollabService } from '@mocktail/collab';
 import { IGridConfig, IPageDoc, IWireElement, ProjectApiService } from '@mocktail/projects';
-import { CanvasGestureStore, HandleDir } from './canvas-gesture.store';
+import { CanvasGestureStore } from './canvas-gesture.store';
+import { HandleDir } from './snapping';
 import { EditorCommentsService } from '../comments/comments.service';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 import { EditorInlineEditService } from '../inline-edit/inline-edit.service';
@@ -69,7 +70,7 @@ describe('CanvasGestureStore', () => {
   };
   // Stubbed only to keep @mocktail/projects injection graph from reaching
   // Firebase; pointer-orchestrator itself no longer depends on it.
-  let projects: { upsertElement: jasmine.Spy };
+  let projects: { writeActivity: jasmine.Spy };
   let workspace: {
     tid: ReturnType<typeof signal<string>>;
     pid: ReturnType<typeof signal<string>>;
@@ -77,10 +78,7 @@ describe('CanvasGestureStore', () => {
     activePage: ReturnType<typeof signal<IPageDoc | null>>;
     gridConfig: ReturnType<typeof signal<IGridConfig>>;
   };
-  let viewport: {
-    getBoardRect: jasmine.Spy;
-    getCanvasRect: jasmine.Spy;
-  };
+  let viewport: { getBoardRect: jasmine.Spy };
   let zoom: EditorZoomService;
 
   beforeEach(() => {
@@ -90,7 +88,7 @@ describe('CanvasGestureStore', () => {
       sendEdit: jasmine.createSpy('sendEdit'),
       flushPendingEdits: jasmine.createSpy('flushPendingEdits'),
     };
-    projects = { upsertElement: jasmine.createSpy('upsertElement').and.resolveTo(undefined) };
+    projects = { writeActivity: jasmine.createSpy('writeActivity').and.resolveTo(undefined) };
     workspace = {
       tid: signal('t1'),
       pid: signal('p1'),
@@ -112,7 +110,6 @@ describe('CanvasGestureStore', () => {
     };
     viewport = {
       getBoardRect: jasmine.createSpy('getBoardRect').and.returnValue(rectLike(0, 0, 1200, 800)),
-      getCanvasRect: jasmine.createSpy('getCanvasRect').and.returnValue(rectLike(0, 0, 1000, 800)),
     };
 
     TestBed.configureTestingModule({
@@ -571,13 +568,13 @@ describe('CanvasGestureStore', () => {
     });
   });
 
-  describe('onCanvasPointerCancel', () => {
+  describe('cancel', () => {
     it('clears drr state and resets marquee + multi-drag state', () => {
       const el = makeEl({ id: 'a', type: 'rect' });
       state.list.set([el]);
       drr.beginDrag(el, { clientX: 0, clientY: 0 }, 't1', 'p1');
       sel.setMarquee({ x: 1, y: 1, w: 10, h: 10 });
-      svc.onCanvasPointerCancel();
+      svc.cancel();
       expect(drr.drag).toBeNull();
       expect(sel.marqueeRect()).toBeNull();
     });

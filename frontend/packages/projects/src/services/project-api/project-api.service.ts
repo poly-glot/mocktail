@@ -11,7 +11,6 @@ import {
 import { ActivityRepository } from '../../repositories/activity.repository';
 import { CommentsRepository } from '../../repositories/comments.repository';
 import { ElementsRepository } from '../../repositories/elements.repository';
-import { GridConfigRepository } from '../../repositories/grid-config.repository';
 import { PagesRepository } from '../../repositories/pages.repository';
 import { ProjectsRepository } from '../../repositories/projects.repository';
 
@@ -28,7 +27,6 @@ export class ProjectApiService {
   private readonly _elements = inject(ElementsRepository);
   private readonly _comments = inject(CommentsRepository);
   private readonly _activity = inject(ActivityRepository);
-  private readonly _grid = inject(GridConfigRepository);
 
   public subscribeProjects(tid: string, onChange: (projects: IProject[]) => void): () => void {
     return this._projects.subscribeProjects(tid, onChange);
@@ -71,14 +69,6 @@ export class ProjectApiService {
     return this._elements.subscribeElements(tid, pid, pageId, onChange);
   }
 
-  public patchElements(
-    tid: string,
-    pid: string,
-    patches: readonly { id: string; patch: Partial<IWireElement> }[],
-  ): Promise<void> {
-    return this._elements.patchElements(tid, pid, patches);
-  }
-
   public subscribeProjectDoc(
     tid: string,
     pid: string,
@@ -88,33 +78,7 @@ export class ProjectApiService {
   }
 
   public updateGridConfig(tid: string, pid: string, gridConfig: IGridConfig): Promise<void> {
-    return this._grid.updateGridConfig(tid, pid, gridConfig);
-  }
-
-  public upsertElement(
-    tid: string,
-    pid: string,
-    el: IWireElement,
-    opts?: { deleteFields?: readonly (keyof IWireElement)[] },
-  ): Promise<void> {
-    return this._elements.upsertElement(tid, pid, el, opts);
-  }
-
-  public deleteElement(tid: string, pid: string, elId: string): Promise<void> {
-    return this._elements.deleteElement(tid, pid, elId);
-  }
-
-  public replaceElements(
-    tid: string,
-    pid: string,
-    toDelete: string[],
-    toWrite: IWireElement[],
-  ): Promise<void> {
-    return this._elements.replaceElements(tid, pid, toDelete, toWrite);
-  }
-
-  public addElements(tid: string, pid: string, toWrite: IWireElement[]): Promise<void> {
-    return this._elements.addElements(tid, pid, toWrite);
+    return this._projects.updateGridConfig(tid, pid, gridConfig);
   }
 
   public subscribeComments(
@@ -154,14 +118,5 @@ export class ProjectApiService {
     onChange: (rows: IActivity[]) => void,
   ): () => void {
     return this._activity.subscribeTenantActivity(tid, max, onChange);
-  }
-
-  public subscribeActivity(
-    tid: string,
-    pid: string,
-    max: number,
-    onChange: (rows: IActivity[]) => void,
-  ): () => void {
-    return this._activity.subscribeActivity(tid, pid, max, onChange);
   }
 }

@@ -2,14 +2,14 @@ import { TestBed } from '@angular/core/testing';
 import { IWireElement } from '@mocktail/projects';
 import { EditorViewportService } from '../viewport/viewport.service';
 import { WorkspaceStore } from '../workspace/workspace.store';
+import { CanvasGestureStore } from './canvas-gesture.store';
 import {
-  CanvasGestureStore,
+  GUIDE_THRESHOLD,
   HandleDir,
   ISnapContext,
-  GUIDE_THRESHOLD,
-  snapToGuides,
   snapResizeEdges,
-} from './canvas-gesture.store';
+  snapToGuides,
+} from './snapping';
 
 function makeEl(p: Partial<IWireElement> & Pick<IWireElement, 'id'>): IWireElement {
   return {

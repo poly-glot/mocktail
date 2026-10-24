@@ -11,5 +11,3 @@ export function withUtm(href: string): string {
   const sep = href.includes('?') ? '&' : '?';
   return `${href}${sep}utm_source=${UNSPLASH_UTM_SOURCE}&utm_medium=${UNSPLASH_UTM_MEDIUM}`;
 }
-
-export const UNSPLASH_HOME_URL = withUtm('https://unsplash.com/');

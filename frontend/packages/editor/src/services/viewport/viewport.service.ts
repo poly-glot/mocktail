@@ -75,15 +75,6 @@ export class EditorViewportService {
   }
 
   /**
-   * Returns the live bounding rect of the outer canvas (scroll container).
-   * Kept for symmetry with `getBoardRect()` and for future orchestrators
-   * that may need to work relative to the canvas viewport.
-   */
-  public getCanvasRect(): DOMRect | null {
-    return this._canvasEl()?.getBoundingClientRect() ?? null;
-  }
-
-  /**
    * Returns the top-left (x, y) at which an element of size (w, h) should be
    * placed so it lands in the middle of the visible viewport. Falls back to a
    * staircase grid when either rect is unavailable, e.g. during hydration.

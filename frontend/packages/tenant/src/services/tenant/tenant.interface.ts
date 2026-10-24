@@ -7,6 +7,13 @@ export interface ITenant {
 
 export type TenantRole = 'owner' | 'editor' | 'viewer';
 
+export interface IMember {
+  id: string;
+  role: TenantRole;
+  displayName?: string;
+  email?: string;
+}
+
 export interface IMembership {
   tenantId: string;
   role: TenantRole;

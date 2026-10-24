@@ -8,7 +8,6 @@ import {
   signOutTestUser,
 } from '@mocktail/core/testing/firebase-test-utils';
 import { TenantService } from '@mocktail/tenant';
-import { IWireElement } from '../../interfaces/project.interface';
 import { ProjectApiService } from './project-api.service';
 
 enableEmulatorFlag();
@@ -75,77 +74,6 @@ describe('ProjectApiService (emulator)', () => {
     unsub();
   });
 
-  it('upsert/delete elements round-trip via subscribeElements', async () => {
-    const pid = await service.createProject(tid, 'Els');
-    let pages: { id: string }[] = [];
-    const unsubPg = service.subscribePages(tid, pid, (p) => (pages = p));
-    await waitFor(() => pages.length > 0);
-    unsubPg();
-    const pageId = pages[0].id;
-
-    const el: IWireElement = {
-      id: 'el-1',
-      pageId,
-      type: 'rect',
-      x: 10,
-      y: 20,
-      w: 100,
-      h: 50,
-      zIndex: 1,
-      text: 'Hi',
-    };
-
-    let current: IWireElement[] = [];
-    const unsub = service.subscribeElements(tid, pid, pageId, (rows) => (current = rows));
-    await service.upsertElement(tid, pid, el);
-    await waitFor(() => current.some((e) => e.id === 'el-1'));
-    await service.deleteElement(tid, pid, 'el-1');
-    await waitFor(() => !current.some((e) => e.id === 'el-1'));
-    unsub();
-  });
-
-  it('addElements batch writes multiple elements', async () => {
-    const pid = await service.createProject(tid, 'Batch');
-    let pages: { id: string }[] = [];
-    const unsubPg = service.subscribePages(tid, pid, (p) => (pages = p));
-    await waitFor(() => pages.length > 0);
-    unsubPg();
-    const pageId = pages[0].id;
-    const els: IWireElement[] = [
-      { id: 'b1', pageId, type: 'rect', x: 0, y: 0, w: 10, h: 10, zIndex: 1 },
-      { id: 'b2', pageId, type: 'text', x: 0, y: 0, w: 10, h: 10, zIndex: 2 },
-    ];
-    await service.addElements(tid, pid, els);
-    let rows: IWireElement[] = [];
-    const unsub = service.subscribeElements(tid, pid, pageId, (r) => (rows = r));
-    await waitFor(() => rows.length >= 2);
-    unsub();
-    // no-op for empty list
-    await service.addElements(tid, pid, []);
-  });
-
-  it('replaceElements atomically swaps the page content', async () => {
-    const pid = await service.createProject(tid, 'Replace');
-    let pages: { id: string }[] = [];
-    const unsubPg = service.subscribePages(tid, pid, (p) => (pages = p));
-    await waitFor(() => pages.length > 0);
-    unsubPg();
-    const pageId = pages[0].id;
-    await service.addElements(tid, pid, [
-      { id: 'old', pageId, type: 'rect', x: 0, y: 0, w: 1, h: 1, zIndex: 1 },
-    ]);
-    await service.replaceElements(
-      tid,
-      pid,
-      ['old'],
-      [{ id: 'fresh', pageId, type: 'text', x: 0, y: 0, w: 1, h: 1, zIndex: 1 }],
-    );
-    let rows: IWireElement[] = [];
-    const unsub = service.subscribeElements(tid, pid, pageId, (r) => (rows = r));
-    await waitFor(() => rows.some((r) => r.id === 'fresh') && !rows.some((r) => r.id === 'old'));
-    unsub();
-  });
-
   it('addPage appends a new page', async () => {
     const pid = await service.createProject(tid, 'Pages');
     const newId = await service.addPage(tid, pid, 'Page 2', 1);
@@ -182,13 +110,9 @@ describe('ProjectApiService (emulator)', () => {
   it('writeActivity writes to both project-level and tenant-level feeds', async () => {
     const pid = await service.createProject(tid, 'Act');
     let tenantActivity: { id: string; summary: string }[] = [];
-    let projActivity: { id: string; summary: string }[] = [];
     const unsub1 = service.subscribeTenantActivity(tid, 50, (r) => (tenantActivity = r));
-    const unsub2 = service.subscribeActivity(tid, pid, 50, (r) => (projActivity = r));
     await service.writeActivity(tid, pid, 'element-added', 'added thing');
     await waitFor(() => tenantActivity.some((a) => a.summary === 'added thing'));
-    await waitFor(() => projActivity.some((a) => a.summary === 'added thing'));
     unsub1();
-    unsub2();
   });
 });
