@@ -112,10 +112,6 @@ export class ImageLibraryPanelComponent implements AfterViewInit {
     this.collapseToggle.emit();
   }
 
-  public trackPhoto(_i: number, p: IUnsplashPhoto): string {
-    return p.id;
-  }
-
   private _rewireObserver(): void {
     this._io?.disconnect();
     const el = this.sentinel?.nativeElement;

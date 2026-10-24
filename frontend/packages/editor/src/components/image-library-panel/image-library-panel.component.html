@@ -51,7 +51,7 @@
 
     @if (svc.results().length > 0) {
       <div class="images-grid" data-testid="images-grid">
-        @for (p of svc.results(); track trackPhoto($index, p)) {
+        @for (p of svc.results(); track p.id) {
           <button
             type="button"
             class="images-tile"

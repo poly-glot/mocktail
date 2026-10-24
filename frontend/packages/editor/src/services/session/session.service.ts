@@ -3,7 +3,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { DialogService } from '@mocktail/cdk';
 import { CollabService } from '@mocktail/collab';
-import { IGridConfig, ProjectApiService } from '@mocktail/projects';
+import {
+  CommentsRepository,
+  ElementsRepository,
+  IGridConfig,
+  PagesRepository,
+  ProjectsRepository,
+} from '@mocktail/projects';
 import { TenantService } from '@mocktail/tenant';
 import { CommentsStore } from '../comments/comments.store';
 import { CanvasGestureStore } from '../canvas-gesture/canvas-gesture.store';
@@ -26,7 +32,10 @@ import { WorkspaceStore } from '../workspace/workspace.store';
  */
 @Injectable()
 export class EditorSessionService {
-  private readonly _projects = inject(ProjectApiService);
+  private readonly _pages = inject(PagesRepository);
+  private readonly _commentsRepo = inject(CommentsRepository);
+  private readonly _projectsRepo = inject(ProjectsRepository);
+  private readonly _elements = inject(ElementsRepository);
   private readonly _tenants = inject(TenantService);
   private readonly _collab = inject(CollabService);
   private readonly _dialog = inject(DialogService);
@@ -76,7 +85,7 @@ export class EditorSessionService {
       const pid = this._workspace.pid();
       if (!tid || !pid) return;
 
-      const unsubPages = this._projects.subscribePages(tid, pid, (pages) => {
+      const unsubPages = this._pages.subscribePages(tid, pid, (pages) => {
         this._workspace.pages.set(pages);
         const current = this._workspace.activePageId();
         if (pages.length === 0) {
@@ -88,11 +97,11 @@ export class EditorSessionService {
         }
       });
 
-      const unsubComments = this._projects.subscribeComments(tid, pid, (rows) => {
+      const unsubComments = this._commentsRepo.subscribeComments(tid, pid, (rows) => {
         this._comments.comments.set(rows);
       });
 
-      const unsubProject = this._projects.subscribeProjectDoc(tid, pid, (proj) => {
+      const unsubProject = this._projectsRepo.subscribeProjectDoc(tid, pid, (proj) => {
         if (proj?.gridConfig) {
           this._workspace.gridConfig.set({ ...WorkspaceStore.DEFAULT_GRID, ...proj.gridConfig });
         }
@@ -112,7 +121,7 @@ export class EditorSessionService {
       const pageId = this._workspace.activePageId();
       if (!tid || !pid || !pageId) return;
 
-      const unsub = this._projects.subscribeElements(tid, pid, pageId, (els, meta) => {
+      const unsub = this._elements.subscribeElements(tid, pid, pageId, (els, meta) => {
         const draggingId = this._drr.activeId();
         if (draggingId) {
           const local = this._elsState.list().find((e) => e.id === draggingId);
@@ -155,12 +164,7 @@ export class EditorSessionService {
   public async addPage(): Promise<void> {
     const name = `Page ${this._workspace.pages().length + 1}`;
     const order = this._workspace.pages().length;
-    const id = await this._projects.addPage(
-      this._workspace.tid(),
-      this._workspace.pid(),
-      name,
-      order,
-    );
+    const id = await this._pages.addPage(this._workspace.tid(), this._workspace.pid(), name, order);
     this.setActivePage(id);
   }
 
@@ -168,7 +172,7 @@ export class EditorSessionService {
     const prev = this._workspace.gridConfig();
     this._workspace.gridConfig.set(next);
     try {
-      await this._projects.updateGridConfig(this._workspace.tid(), this._workspace.pid(), next);
+      await this._projectsRepo.updateGridConfig(this._workspace.tid(), this._workspace.pid(), next);
     } catch (err) {
       this._workspace.gridConfig.set(prev);
       console.error('[session] updateGridConfig failed', err);
@@ -200,7 +204,7 @@ export class EditorSessionService {
     if (this._workspace.activePageId() === pageId && next) {
       this.setActivePage(next.id);
     }
-    await this._projects.deletePage(this._workspace.tid(), this._workspace.pid(), pageId);
+    await this._pages.deletePage(this._workspace.tid(), this._workspace.pid(), pageId);
     this._collab.sendEdit(`page:${pageId}`, { deleted: true });
   }
 }

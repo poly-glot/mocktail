@@ -2,7 +2,15 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, ParamMap, convertToParamMap } from '@angular/router';
 import { DialogService } from '@mocktail/cdk';
 import { CollabService } from '@mocktail/collab';
-import { IComment, IPageDoc, IProject, ProjectApiService } from '@mocktail/projects';
+import {
+  CommentsRepository,
+  ElementsRepository,
+  IComment,
+  IPageDoc,
+  IProject,
+  PagesRepository,
+  ProjectsRepository,
+} from '@mocktail/projects';
 import { TenantService } from '@mocktail/tenant';
 import { BehaviorSubject } from 'rxjs';
 import { CanvasGestureStore } from '../canvas-gesture/canvas-gesture.store';
@@ -38,7 +46,10 @@ function makeProject(partial: Partial<IProject>): IProject {
 
 describe('EditorSessionService', () => {
   let svc: EditorSessionService;
-  let projects: jasmine.SpyObj<ProjectApiService>;
+  let pages: jasmine.SpyObj<PagesRepository>;
+  let commentsRepo: jasmine.SpyObj<CommentsRepository>;
+  let projectsRepo: jasmine.SpyObj<ProjectsRepository>;
+  let elements: jasmine.SpyObj<ElementsRepository>;
   let tenants: jasmine.SpyObj<TenantService>;
   let collab: jasmine.SpyObj<CollabService>;
   let dialog: jasmine.SpyObj<DialogService>;
@@ -62,29 +73,36 @@ describe('EditorSessionService', () => {
     unsubProject = jasmine.createSpy('unsubProject');
     paramMap$ = new BehaviorSubject<ParamMap>(convertToParamMap({}));
 
-    projects = jasmine.createSpyObj<ProjectApiService>('ProjectApiService', [
+    pages = jasmine.createSpyObj<PagesRepository>('PagesRepository', [
       'subscribePages',
-      'subscribeComments',
-      'subscribeProjectDoc',
-      'subscribeElements',
       'addPage',
       'deletePage',
     ]);
-    projects.subscribePages.and.callFake((_t: string, _p: string, cb: PagesCallback) => {
+    commentsRepo = jasmine.createSpyObj<CommentsRepository>('CommentsRepository', [
+      'subscribeComments',
+    ]);
+    projectsRepo = jasmine.createSpyObj<ProjectsRepository>('ProjectsRepository', [
+      'subscribeProjectDoc',
+      'updateGridConfig',
+    ]);
+    elements = jasmine.createSpyObj<ElementsRepository>('ElementsRepository', [
+      'subscribeElements',
+    ]);
+    pages.subscribePages.and.callFake((_t: string, _p: string, cb: PagesCallback) => {
       pagesCb = cb;
       return unsubPages as unknown as () => void;
     });
-    projects.subscribeComments.and.callFake((_t: string, _p: string, cb: CommentsCallback) => {
+    commentsRepo.subscribeComments.and.callFake((_t: string, _p: string, cb: CommentsCallback) => {
       commentsCb = cb;
       return unsubComments as unknown as () => void;
     });
-    projects.subscribeProjectDoc.and.callFake((_t: string, _p: string, cb: ProjectCallback) => {
+    projectsRepo.subscribeProjectDoc.and.callFake((_t: string, _p: string, cb: ProjectCallback) => {
       projectCb = cb;
       return unsubProject as unknown as () => void;
     });
-    projects.subscribeElements.and.returnValue((() => undefined) as unknown as () => void);
-    projects.addPage.and.returnValue(Promise.resolve('new-page-id'));
-    projects.deletePage.and.returnValue(Promise.resolve());
+    elements.subscribeElements.and.returnValue((() => undefined) as unknown as () => void);
+    pages.addPage.and.returnValue(Promise.resolve('new-page-id'));
+    pages.deletePage.and.returnValue(Promise.resolve());
 
     tenants = jasmine.createSpyObj<TenantService>('TenantService', ['setCurrent']);
     collab = jasmine.createSpyObj<CollabService>('CollabService', [
@@ -103,7 +121,10 @@ describe('EditorSessionService', () => {
           provide: ActivatedRoute,
           useValue: { paramMap: paramMap$.asObservable() },
         },
-        { provide: ProjectApiService, useValue: projects },
+        { provide: PagesRepository, useValue: pages },
+        { provide: CommentsRepository, useValue: commentsRepo },
+        { provide: ProjectsRepository, useValue: projectsRepo },
+        { provide: ElementsRepository, useValue: elements },
         { provide: TenantService, useValue: tenants },
         { provide: CollabService, useValue: collab },
         { provide: DialogService, useValue: dialog },
@@ -136,9 +157,17 @@ describe('EditorSessionService', () => {
   describe('init', () => {
     it('wires pages/comments/project subscriptions when tid+pid are present', () => {
       emitRoute('t1', 'p1');
-      expect(projects.subscribePages).toHaveBeenCalledWith('t1', 'p1', jasmine.any(Function));
-      expect(projects.subscribeComments).toHaveBeenCalledWith('t1', 'p1', jasmine.any(Function));
-      expect(projects.subscribeProjectDoc).toHaveBeenCalledWith('t1', 'p1', jasmine.any(Function));
+      expect(pages.subscribePages).toHaveBeenCalledWith('t1', 'p1', jasmine.any(Function));
+      expect(commentsRepo.subscribeComments).toHaveBeenCalledWith(
+        't1',
+        'p1',
+        jasmine.any(Function),
+      );
+      expect(projectsRepo.subscribeProjectDoc).toHaveBeenCalledWith(
+        't1',
+        'p1',
+        jasmine.any(Function),
+      );
       expect(tenants.setCurrent).toHaveBeenCalledWith('t1');
       expect(collab.connect).toHaveBeenCalledWith('t1', 'p1');
       expect(svc.tid()).toBe('t1');
@@ -147,17 +176,17 @@ describe('EditorSessionService', () => {
 
     it('no-ops when tid or pid is missing from the route', () => {
       emitRoute('', '');
-      expect(projects.subscribePages).not.toHaveBeenCalled();
+      expect(pages.subscribePages).not.toHaveBeenCalled();
       expect(collab.connect).not.toHaveBeenCalled();
     });
 
     it('early-returns when the same tid+pid re-emits', () => {
       emitRoute('t1', 'p1');
-      projects.subscribePages.calls.reset();
+      pages.subscribePages.calls.reset();
       tenants.setCurrent.calls.reset();
       collab.connect.calls.reset();
       emitRoute('t1', 'p1');
-      expect(projects.subscribePages).not.toHaveBeenCalled();
+      expect(pages.subscribePages).not.toHaveBeenCalled();
       expect(tenants.setCurrent).not.toHaveBeenCalled();
       expect(collab.connect).not.toHaveBeenCalled();
     });
@@ -253,7 +282,7 @@ describe('EditorSessionService', () => {
       pagesCb!([page('pg-a', 0)]);
       TestBed.flushEffects();
       await svc.addPage();
-      expect(projects.addPage).toHaveBeenCalledWith('t1', 'p1', 'Page 2', 1);
+      expect(pages.addPage).toHaveBeenCalledWith('t1', 'p1', 'Page 2', 1);
       expect(svc.activePageId()).toBe('new-page-id');
     });
   });
@@ -265,7 +294,7 @@ describe('EditorSessionService', () => {
       TestBed.flushEffects();
       await svc.requestDeletePage('only');
       expect(dialog.alert).toHaveBeenCalled();
-      expect(projects.deletePage).not.toHaveBeenCalled();
+      expect(pages.deletePage).not.toHaveBeenCalled();
     });
 
     it('deletes the page, reroutes to a neighbor, and emits a collab edit', async () => {
@@ -276,7 +305,7 @@ describe('EditorSessionService', () => {
       await svc.requestDeletePage('b');
       expect(dialog.confirm).toHaveBeenCalled();
       expect(svc.activePageId()).toBe('c');
-      expect(projects.deletePage).toHaveBeenCalledWith('t1', 'p1', 'b');
+      expect(pages.deletePage).toHaveBeenCalledWith('t1', 'p1', 'b');
       expect(collab.sendEdit).toHaveBeenCalledWith('page:b', { deleted: true });
     });
 
@@ -295,7 +324,7 @@ describe('EditorSessionService', () => {
       pagesCb!([page('a', 0), page('b', 1)]);
       TestBed.flushEffects();
       await svc.requestDeletePage('b');
-      expect(projects.deletePage).not.toHaveBeenCalled();
+      expect(pages.deletePage).not.toHaveBeenCalled();
       expect(collab.sendEdit).not.toHaveBeenCalled();
     });
 
@@ -353,18 +382,20 @@ describe('EditorSessionService teardown', () => {
     const unsubProject = jasmine.createSpy('unsubProject');
     const paramMap$ = new BehaviorSubject(convertToParamMap({ tid: 't1', pid: 'p1' }));
 
-    const projects = jasmine.createSpyObj<ProjectApiService>('ProjectApiService', [
-      'subscribePages',
+    const pages = jasmine.createSpyObj<PagesRepository>('PagesRepository', ['subscribePages']);
+    const commentsRepo = jasmine.createSpyObj<CommentsRepository>('CommentsRepository', [
       'subscribeComments',
-      'subscribeProjectDoc',
-      'subscribeElements',
-      'addPage',
-      'deletePage',
     ]);
-    projects.subscribePages.and.returnValue(unsubPages as unknown as () => void);
-    projects.subscribeComments.and.returnValue(unsubComments as unknown as () => void);
-    projects.subscribeProjectDoc.and.returnValue(unsubProject as unknown as () => void);
-    projects.subscribeElements.and.returnValue((() => undefined) as unknown as () => void);
+    const projectsRepo = jasmine.createSpyObj<ProjectsRepository>('ProjectsRepository', [
+      'subscribeProjectDoc',
+    ]);
+    const elements = jasmine.createSpyObj<ElementsRepository>('ElementsRepository', [
+      'subscribeElements',
+    ]);
+    pages.subscribePages.and.returnValue(unsubPages as unknown as () => void);
+    commentsRepo.subscribeComments.and.returnValue(unsubComments as unknown as () => void);
+    projectsRepo.subscribeProjectDoc.and.returnValue(unsubProject as unknown as () => void);
+    elements.subscribeElements.and.returnValue((() => undefined) as unknown as () => void);
     const tenants = jasmine.createSpyObj<TenantService>('TenantService', ['setCurrent']);
     const collab = jasmine.createSpyObj<CollabService>('CollabService', [
       'connect',
@@ -378,7 +409,10 @@ describe('EditorSessionService teardown', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: ActivatedRoute, useValue: { paramMap: paramMap$.asObservable() } },
-        { provide: ProjectApiService, useValue: projects },
+        { provide: PagesRepository, useValue: pages },
+        { provide: CommentsRepository, useValue: commentsRepo },
+        { provide: ProjectsRepository, useValue: projectsRepo },
+        { provide: ElementsRepository, useValue: elements },
         { provide: TenantService, useValue: tenants },
         { provide: CollabService, useValue: collab },
         { provide: DialogService, useValue: dialog },

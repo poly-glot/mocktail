@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { CollabService } from '@mocktail/collab';
-import { ElementType, IWireElement, ProjectApiService, toWirePatch } from '@mocktail/projects';
+import { ElementType, IWireElement, ActivityRepository, toWirePatch } from '@mocktail/projects';
 import { IPaletteItem, PALETTE_ITEM_BY_TYPE } from '../../components/palette/palette.component';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 
@@ -30,7 +30,7 @@ interface IPlacement {
 
 @Injectable({ providedIn: 'root' })
 export class EditorElementFactoryService {
-  private readonly _projects = inject(ProjectApiService);
+  private readonly _activity = inject(ActivityRepository);
   private readonly _collab = inject(CollabService);
   private readonly _state = inject(EditorElementsStateService);
 
@@ -116,7 +116,7 @@ export class EditorElementFactoryService {
     this._state.list.update((els) => [...els, el]);
     this._collab.sendEdit(el.id, toWirePatch(el));
     this._collab.flushPendingEdits();
-    this._projects.writeActivity(tid, pid, 'element-added', `added ${placement.type}`);
+    this._activity.writeActivity(tid, pid, 'element-added', `added ${placement.type}`);
     return el.id;
   }
 }

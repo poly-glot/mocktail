@@ -1,4 +1,3 @@
-export { ProjectApiService } from './services/project-api/project-api.service';
 export { ProjectsRepository } from './repositories/projects.repository';
 export { PagesRepository } from './repositories/pages.repository';
 export { ElementsRepository } from './repositories/elements.repository';

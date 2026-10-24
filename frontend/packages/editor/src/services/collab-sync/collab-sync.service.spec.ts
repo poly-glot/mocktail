@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { CollabService, IRemoteDelete, IRemoteDeleteFields, IRemoteEdit } from '@mocktail/collab';
-import { IWireElement, ProjectApiService } from '@mocktail/projects';
+import { IWireElement, ActivityRepository } from '@mocktail/projects';
 import { CanvasGestureStore } from '../canvas-gesture/canvas-gesture.store';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 import { EditorInlineEditService } from '../inline-edit/inline-edit.service';
@@ -48,10 +48,10 @@ describe('EditorCollabSyncService', () => {
         { provide: CollabService, useValue: collabStub as Partial<CollabService> },
         { provide: CanvasGestureStore, useValue: drr as Partial<CanvasGestureStore> },
         {
-          provide: ProjectApiService,
+          provide: ActivityRepository,
           useValue: {
             writeActivity: jasmine.createSpy().and.resolveTo(undefined),
-          } as Partial<ProjectApiService>,
+          } as Partial<ActivityRepository>,
         },
         EditorCollabSyncService,
       ],

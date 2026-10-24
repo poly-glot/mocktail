@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CollabService } from '@mocktail/collab';
-import { IWireElement, ProjectApiService } from '@mocktail/projects';
+import { IWireElement, ActivityRepository } from '@mocktail/projects';
 import { IPaletteItem } from '../../components/palette/palette.component';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 import { EditorElementFactoryService } from './element-factory.service';
@@ -44,10 +44,10 @@ describe('EditorElementFactoryService', () => {
     TestBed.configureTestingModule({
       providers: [
         {
-          provide: ProjectApiService,
+          provide: ActivityRepository,
           useValue: {
             writeActivity: writeActivitySpy,
-          } as Partial<ProjectApiService>,
+          } as Partial<ActivityRepository>,
         },
         {
           provide: CollabService,

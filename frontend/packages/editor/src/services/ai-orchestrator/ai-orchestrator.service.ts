@@ -4,7 +4,7 @@ import {
   AiService,
   ElementType,
   IWireElement,
-  ProjectApiService,
+  ActivityRepository,
   toWirePatch,
 } from '@mocktail/projects';
 import { EditorElementFactoryService } from '../element-factory/element-factory.service';
@@ -22,7 +22,7 @@ import { EditorElementsStateService } from '../elements-state/elements-state.ser
 @Injectable({ providedIn: 'root' })
 export class EditorAiOrchestratorService {
   private readonly _ai = inject(AiService);
-  private readonly _projects = inject(ProjectApiService);
+  private readonly _activity = inject(ActivityRepository);
   private readonly _factory = inject(EditorElementFactoryService);
   private readonly _collab = inject(CollabService);
   private readonly _state = inject(EditorElementsStateService);
@@ -80,7 +80,7 @@ export class EditorAiOrchestratorService {
     this._collab.flushPendingEdits();
 
     const count = out.elements?.length ?? 0;
-    await this._projects.writeActivity(
+    await this._activity.writeActivity(
       tid,
       pid,
       'ai-generated',

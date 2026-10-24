@@ -3,8 +3,8 @@ import { signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { TenantService } from '@mocktail/tenant';
 import { IProject } from '../../interfaces/project.interface';
+import { ActivityRepository } from '../../repositories/activity.repository';
 import { ProjectsRepository } from '../../repositories/projects.repository';
-import { ProjectApiService } from '../../services/project-api/project-api.service';
 import { DashboardComponent } from './dashboard.component';
 
 describe('DashboardComponent', () => {
@@ -24,16 +24,16 @@ describe('DashboardComponent', () => {
         },
         {
           provide: ProjectsRepository,
-          useValue: { projectsSignal: () => itemsStub },
-        },
-        {
-          provide: ProjectApiService,
           useValue: {
-            subscribeTenantActivity: () => () => {},
+            projectsSignal: () => itemsStub,
             createProject: () => Promise.resolve('pid'),
             renameProject: () => Promise.resolve(),
             softDeleteProject: () => Promise.resolve(),
           },
+        },
+        {
+          provide: ActivityRepository,
+          useValue: { subscribeTenantActivity: () => () => {} },
         },
         { provide: Router, useValue: { navigate: jasmine.createSpy('navigate') } },
       ],

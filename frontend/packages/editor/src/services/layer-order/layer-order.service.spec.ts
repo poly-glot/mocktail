@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CollabService } from '@mocktail/collab';
-import { IWireElement, ProjectApiService } from '@mocktail/projects';
+import { IWireElement } from '@mocktail/projects';
 import { EditorContextMenuService } from '../context-menu/context-menu.service';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 import { EditorSelectionService } from '../selection/selection.service';
@@ -36,13 +36,7 @@ describe('EditorLayerOrderService', () => {
       flushPendingEdits: jasmine.createSpy('flushPendingEdits'),
     };
     TestBed.configureTestingModule({
-      providers: [
-        {
-          provide: ProjectApiService,
-          useValue: {} as Partial<ProjectApiService>,
-        },
-        { provide: CollabService, useValue: collab as Partial<CollabService> },
-      ],
+      providers: [{ provide: CollabService, useValue: collab as Partial<CollabService> }],
     });
     svc = TestBed.inject(EditorLayerOrderService);
     state = TestBed.inject(EditorElementsStateService);

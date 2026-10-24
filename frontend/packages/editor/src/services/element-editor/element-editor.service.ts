@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { CollabService } from '@mocktail/collab';
-import { HeadingLevel, IWireElement, ProjectApiService, toWirePatch } from '@mocktail/projects';
+import { HeadingLevel, IWireElement, ActivityRepository, toWirePatch } from '@mocktail/projects';
 import { EditorElementFactoryService } from '../element-factory/element-factory.service';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 import { EditorSelectionService } from '../selection/selection.service';
@@ -12,7 +12,7 @@ export class EditorElementEditorService {
   private readonly _state = inject(EditorElementsStateService);
   private readonly _sel = inject(EditorSelectionService);
   private readonly _factory = inject(EditorElementFactoryService);
-  private readonly _projects = inject(ProjectApiService);
+  private readonly _activity = inject(ActivityRepository);
   private readonly _collab = inject(CollabService);
 
   private selected(): IWireElement | null {
@@ -41,7 +41,7 @@ export class EditorElementEditorService {
 
     const label =
       toDelete.length === 1 ? `deleted ${toDelete[0].type}` : `deleted ${toDelete.length} elements`;
-    await this._projects.writeActivity(tid, pid, 'element-deleted', label);
+    await this._activity.writeActivity(tid, pid, 'element-deleted', label);
   }
 
   public duplicateSelected(): string | null {

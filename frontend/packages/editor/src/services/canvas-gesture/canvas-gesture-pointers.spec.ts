@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { CollabService } from '@mocktail/collab';
-import { IGridConfig, IPageDoc, IWireElement, ProjectApiService } from '@mocktail/projects';
+import { IGridConfig, IPageDoc, IWireElement, ActivityRepository } from '@mocktail/projects';
 import { CanvasGestureStore } from './canvas-gesture.store';
 import { HandleDir } from './snapping';
 import { EditorCommentsService } from '../comments/comments.service';
@@ -115,7 +115,7 @@ describe('CanvasGestureStore', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: CollabService, useValue: collab as Partial<CollabService> },
-        { provide: ProjectApiService, useValue: projects as Partial<ProjectApiService> },
+        { provide: ActivityRepository, useValue: projects as Partial<ActivityRepository> },
         { provide: WorkspaceStore, useValue: workspace as Partial<WorkspaceStore> },
         { provide: EditorViewportService, useValue: viewport as Partial<EditorViewportService> },
         CanvasGestureStore,

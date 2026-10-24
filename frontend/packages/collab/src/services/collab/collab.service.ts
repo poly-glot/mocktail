@@ -29,6 +29,28 @@ export interface IRemoteDeleteFields {
   from: string;
 }
 
+type Message = Record<string, unknown>;
+
+const OFFSCREEN = -999;
+const PEER_PALETTE = ['#0a0a0a', '#1f2937', '#b45309', '#065f46', '#1e3a8a', '#7c3aed', '#be123c'];
+
+function colorFor(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return PEER_PALETTE[Math.abs(h) % PEER_PALETTE.length];
+}
+
+function offscreenPeer(userId: string, name: unknown, color: unknown): ICursorState {
+  return {
+    userId,
+    name: String(name ?? 'Guest'),
+    color: String(color ?? '#0a0a0a'),
+    x: OFFSCREEN,
+    y: OFFSCREEN,
+    lastSeenMs: Date.now(),
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class CollabService {
   public readonly connected = signal(false);
@@ -79,10 +101,7 @@ export class CollabService {
       clearTimeout(this._reconnectTimer);
       this._reconnectTimer = null;
     }
-    if (this._heartbeatTimer) {
-      clearTimeout(this._heartbeatTimer);
-      this._heartbeatTimer = null;
-    }
+    this._clearHeartbeat();
     try {
       this._socket?.close();
     } catch {
@@ -155,8 +174,12 @@ export class CollabService {
     return {
       userId: u?.uid ?? 'anon',
       name: u?.displayName ?? u?.email?.split('@')[0] ?? 'Guest',
-      color: this._colorFor(u?.uid ?? 'anon'),
+      color: colorFor(u?.uid ?? 'anon'),
     };
+  }
+
+  private _selfId(): string {
+    return this._authService.user()?.uid ?? 'anon';
   }
 
   private _openSocket(): void {
@@ -191,10 +214,7 @@ export class CollabService {
       this.connected.set(false);
       this._socket = null;
       this.cursors.set(new Map());
-      if (this._heartbeatTimer) {
-        clearTimeout(this._heartbeatTimer);
-        this._heartbeatTimer = null;
-      }
+      this._clearHeartbeat();
       if (!this._intentionalClose && this._currentProjectId) {
         this._scheduleReconnect();
       }
@@ -206,8 +226,7 @@ export class CollabService {
       const text = typeof ev.data === 'string' ? ev.data : null;
       if (!text) return;
       try {
-        const msg = JSON.parse(text);
-        this._handleMessage(msg);
+        this._handleMessage(JSON.parse(text));
       } catch {
         // ignore non-JSON
       }
@@ -219,14 +238,7 @@ export class CollabService {
       await firstValueFrom(this._authService.isLoading$.pipe(filter((l) => !l)));
     }
     if (ws.readyState !== WebSocket.OPEN) return;
-    const u = this._authService.user();
-    const hello = {
-      type: 'hello',
-      userId: u?.uid ?? 'anon',
-      name: u?.displayName ?? u?.email?.split('@')[0] ?? 'Guest',
-      color: this._colorFor(u?.uid ?? 'anon'),
-    };
-    ws.send(JSON.stringify(hello));
+    ws.send(JSON.stringify({ type: 'hello', ...this._identity() }));
     while (this._sendQueue.length) {
       const msg = this._sendQueue.shift();
       if (msg) ws.send(msg);
@@ -250,11 +262,14 @@ export class CollabService {
    * heartbeat only ever fires when the user is genuinely quiet, preventing
    * the server's 60 s per-connection idle cull.
    */
+  private _clearHeartbeat(): void {
+    if (!this._heartbeatTimer) return;
+    clearTimeout(this._heartbeatTimer);
+    this._heartbeatTimer = null;
+  }
+
   private _resetHeartbeat(): void {
-    if (this._heartbeatTimer) {
-      clearTimeout(this._heartbeatTimer);
-      this._heartbeatTimer = null;
-    }
+    this._clearHeartbeat();
     this._heartbeatTimer = setTimeout(() => {
       // Skip if disconnected; do NOT fall back to _sendQueue. A long outage
       // must not fill the 64-slot queue with stale heartbeats.
@@ -283,117 +298,87 @@ export class CollabService {
     }
   }
 
-  private _handleMessage(msg: Record<string, unknown>): void {
-    if (!msg || typeof msg !== 'object') return;
-    const t = msg['type'];
-    if (t === 'hello') {
-      // Peer joined; register their identity so cursor frames can look them up
-      // and the presence strip shows the right name/color before they move.
-      const userId = String(msg['userId'] ?? '');
-      if (!userId) return;
-      if (userId === (this._authService.user()?.uid ?? 'anon')) return;
-      this.cursors.update((m) => {
-        const next = new Map(m);
-        if (!next.has(userId)) {
-          next.set(userId, {
-            userId,
-            name: String(msg['name'] ?? 'Guest'),
-            color: String(msg['color'] ?? '#0a0a0a'),
-            x: -999,
-            y: -999,
-            lastSeenMs: Date.now(),
-          });
-        } else {
-          const existing = next.get(userId)!;
-          next.set(userId, {
-            ...existing,
-            name: String(msg['name'] ?? existing.name),
-            color: String(msg['color'] ?? existing.color),
-          });
-        }
-        return next;
-      });
-      return;
-    }
-    if (t === 'cursor') {
-      const userId = String(msg['userId'] ?? 'unknown');
-      if (userId === (this._authService.user()?.uid ?? 'anon')) return;
-      this.cursors.update((m) => {
-        const next = new Map(m);
-        const existing = next.get(userId);
-        next.set(userId, {
-          userId,
-          name: String(msg['name'] ?? existing?.name ?? 'Guest'),
-          color: String(msg['color'] ?? existing?.color ?? '#0a0a0a'),
-          x: Number(msg['x'] ?? 0),
-          y: Number(msg['y'] ?? 0),
-          lastSeenMs: Date.now(),
-          selection: msg['selection'] as string | undefined,
-        });
-        return next;
-      });
-    } else if (t === 'roster') {
-      const members = Array.isArray(msg['members'])
-        ? (msg['members'] as Record<string, unknown>[])
-        : [];
-      this.cursors.update((m) => {
-        const next = new Map(m);
-        const selfId = this._authService.user()?.uid ?? 'anon';
-        for (const mem of members) {
-          if (!mem || mem['userId'] === selfId) continue;
-          const uid = mem['userId'] as string;
-          if (!next.has(uid)) {
-            next.set(uid, {
-              userId: uid,
-              name: (mem['name'] as string) ?? 'Guest',
-              color: (mem['color'] as string) ?? '#0a0a0a',
-              x: -999,
-              y: -999,
-              lastSeenMs: Date.now(),
-            });
-          }
-        }
-        return next;
-      });
-    } else if (t === 'leave') {
-      const userId = String(msg['userId'] ?? '');
-      if (!userId) return;
-      this.cursors.update((m) => {
-        const next = new Map(m);
-        next.delete(userId);
-        return next;
-      });
-    } else if (t === 'edit') {
+  private readonly _handlers: Record<string, (msg: Message) => void> = {
+    hello: (msg) => this._onHello(msg),
+    cursor: (msg) => this._onCursor(msg),
+    roster: (msg) => this._onRoster(msg),
+    leave: (msg) => this._updateCursors((next) => next.delete(String(msg['userId'] ?? ''))),
+    edit: (msg) =>
       this.lastRemoteEdit.set({
         elementId: String(msg['elementId'] ?? ''),
         patch: (msg['patch'] ?? {}) as Record<string, unknown>,
         from: String(msg['userId'] ?? ''),
-      });
-    } else if (t === 'delete') {
-      const elementId = String(msg['elementId'] ?? '');
-      if (!elementId) return;
-      this.lastRemoteDelete.set({
-        elementId,
-        from: String(msg['userId'] ?? ''),
-      });
-    } else if (t === 'deleteFields') {
-      const elementId = String(msg['elementId'] ?? '');
-      const fields = Array.isArray(msg['fields'])
-        ? (msg['fields'] as unknown[]).map((f) => String(f))
-        : [];
-      if (!elementId || fields.length === 0) return;
-      this.lastRemoteDeleteFields.set({
-        elementId,
-        fields,
-        from: String(msg['userId'] ?? ''),
-      });
-    }
+      }),
+    delete: (msg) => this._onDelete(msg),
+    deleteFields: (msg) => this._onDeleteFields(msg),
+  };
+
+  private _handleMessage(msg: unknown): void {
+    if (!msg || typeof msg !== 'object') return;
+    const message = msg as Message;
+    this._handlers[String(message['type'])]?.(message);
   }
 
-  private _colorFor(seed: string): string {
-    let h = 0;
-    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-    const palette = ['#0a0a0a', '#1f2937', '#b45309', '#065f46', '#1e3a8a', '#7c3aed', '#be123c'];
-    return palette[Math.abs(h) % palette.length];
+  private _updateCursors(mutate: (next: Map<string, ICursorState>) => void): void {
+    this.cursors.update((current) => {
+      const next = new Map(current);
+      mutate(next);
+      return next;
+    });
+  }
+
+  private _onHello(msg: Message): void {
+    const userId = String(msg['userId'] ?? '');
+    if (!userId || userId === this._selfId()) return;
+    this._updateCursors((next) => {
+      const existing = next.get(userId) ?? offscreenPeer(userId, msg['name'], msg['color']);
+      next.set(userId, {
+        ...existing,
+        name: String(msg['name'] ?? existing.name),
+        color: String(msg['color'] ?? existing.color),
+      });
+    });
+  }
+
+  private _onCursor(msg: Message): void {
+    const userId = String(msg['userId'] ?? 'unknown');
+    if (userId === this._selfId()) return;
+    this._updateCursors((next) => {
+      const existing = next.get(userId);
+      next.set(userId, {
+        userId,
+        name: String(msg['name'] ?? existing?.name ?? 'Guest'),
+        color: String(msg['color'] ?? existing?.color ?? '#0a0a0a'),
+        x: Number(msg['x'] ?? 0),
+        y: Number(msg['y'] ?? 0),
+        lastSeenMs: Date.now(),
+        selection: msg['selection'] as string | undefined,
+      });
+    });
+  }
+
+  private _onRoster(msg: Message): void {
+    const members = Array.isArray(msg['members']) ? (msg['members'] as Message[]) : [];
+    const selfId = this._selfId();
+    this._updateCursors((next) => {
+      for (const member of members) {
+        const userId = member?.['userId'] as string | undefined;
+        if (!userId || userId === selfId || next.has(userId)) continue;
+        next.set(userId, offscreenPeer(userId, member['name'], member['color']));
+      }
+    });
+  }
+
+  private _onDelete(msg: Message): void {
+    const elementId = String(msg['elementId'] ?? '');
+    if (!elementId) return;
+    this.lastRemoteDelete.set({ elementId, from: String(msg['userId'] ?? '') });
+  }
+
+  private _onDeleteFields(msg: Message): void {
+    const elementId = String(msg['elementId'] ?? '');
+    const fields = Array.isArray(msg['fields']) ? (msg['fields'] as unknown[]).map(String) : [];
+    if (!elementId || fields.length === 0) return;
+    this.lastRemoteDeleteFields.set({ elementId, fields, from: String(msg['userId'] ?? '') });
   }
 }

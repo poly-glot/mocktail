@@ -3,7 +3,15 @@ import { EnvironmentInjector, runInInjectionContext, signal } from '@angular/cor
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { DialogService } from '@mocktail/cdk';
 import { CollabService } from '@mocktail/collab';
-import { AiService, IWireElement, ProjectApiService } from '@mocktail/projects';
+import {
+  ActivityRepository,
+  AiService,
+  CommentsRepository,
+  ElementsRepository,
+  IWireElement,
+  PagesRepository,
+  ProjectsRepository,
+} from '@mocktail/projects';
 import { TenantService } from '@mocktail/tenant';
 import { of } from 'rxjs';
 import { EditorComponent } from './editor.component';
@@ -38,7 +46,8 @@ describe('EditorComponent', () => {
   let cmp: EditorComponent;
   let drr: CanvasGestureStore;
   let editorSvc: EditorElementEditorService;
-  let projects: jasmine.SpyObj<ProjectApiService>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let repos: jasmine.SpyObj<any>;
   let collab: {
     connected: ReturnType<typeof signal<boolean>>;
     cursors: ReturnType<typeof signal<Map<string, unknown>>>;
@@ -57,7 +66,7 @@ describe('EditorComponent', () => {
   let dialog: jasmine.SpyObj<DialogService>;
 
   beforeEach(async () => {
-    projects = jasmine.createSpyObj<ProjectApiService>('ProjectApiService', [
+    repos = jasmine.createSpyObj('repositories', [
       'subscribePages',
       'subscribeElements',
       'subscribeComments',
@@ -69,12 +78,12 @@ describe('EditorComponent', () => {
       'addComment',
       'resolveComment',
     ]);
-    projects.subscribePages.and.returnValue(() => undefined);
-    projects.subscribeElements.and.returnValue(() => undefined);
-    projects.subscribeComments.and.returnValue(() => undefined);
-    projects.subscribeProjectDoc.and.returnValue(() => undefined);
-    projects.writeActivity.and.returnValue(Promise.resolve());
-    projects.updateGridConfig.and.returnValue(Promise.resolve());
+    repos.subscribePages.and.returnValue(() => undefined);
+    repos.subscribeElements.and.returnValue(() => undefined);
+    repos.subscribeComments.and.returnValue(() => undefined);
+    repos.subscribeProjectDoc.and.returnValue(() => undefined);
+    repos.writeActivity.and.returnValue(Promise.resolve());
+    repos.updateGridConfig.and.returnValue(Promise.resolve());
 
     collab = {
       connected: signal(false),
@@ -103,7 +112,11 @@ describe('EditorComponent', () => {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ tid: 't1', pid: 'p1' })) },
         },
-        { provide: ProjectApiService, useValue: projects },
+        { provide: PagesRepository, useValue: repos },
+        { provide: CommentsRepository, useValue: repos },
+        { provide: ProjectsRepository, useValue: repos },
+        { provide: ElementsRepository, useValue: repos },
+        { provide: ActivityRepository, useValue: repos },
         {
           provide: TenantService,
           useValue: {

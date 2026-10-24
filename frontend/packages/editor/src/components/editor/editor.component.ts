@@ -15,7 +15,6 @@ import {
   AiService,
   ElementType,
   IWireElement,
-  ProjectApiService,
   buttonVariantOf,
   dividerOrientation,
   hasBackground,
@@ -215,7 +214,6 @@ import { ICON_PROVIDER_MAP } from '../icon-picker/icon-registry';
 export class EditorComponent implements OnInit {
   public readonly aiPrompt = signal('');
 
-  private readonly _projects = inject(ProjectApiService);
   private readonly _collab = inject(CollabService);
   private readonly _ai = inject(AiService);
   private readonly _dialog = inject(DialogService);
