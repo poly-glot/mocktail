@@ -12,10 +12,10 @@
     "lines": 83.33
   },
   "packages/collab": {
-    "statements": 86.56,
-    "branches": 51.47,
-    "functions": 89.19,
-    "lines": 92.07
+    "statements": 97.31,
+    "branches": 95.33,
+    "functions": 97.78,
+    "lines": 98.17
   },
   "packages/tenant": {
     "statements": 87.45,
