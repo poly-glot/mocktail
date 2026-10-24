@@ -23,9 +23,19 @@ import {
   Sparkles,
   Users,
 } from 'lucide-angular';
-import { IActivity, IProject } from '../../interfaces/project.interface';
+import { ActivityType, IActivity, IProject } from '../../interfaces/project.interface';
+import { ActivityRepository } from '../../repositories/activity.repository';
 import { ProjectsRepository } from '../../repositories/projects.repository';
-import { ProjectApiService } from '../../services/project-api/project-api.service';
+
+const ACTIVITY_ICON: Record<ActivityType, string> = {
+  'element-added': 'plus',
+  'element-deleted': 'minus',
+  'ai-generated': 'sparkles',
+  'comment-added': 'message-circle',
+  'comment-resolved': 'check',
+  'project-created': 'diamond',
+  'project-renamed': 'diamond',
+};
 
 @Component({
   selector: 'mk-dashboard',
@@ -57,7 +67,7 @@ export class DashboardComponent implements OnDestroy {
   public readonly search = signal('');
 
   private readonly _tenants = inject(TenantService);
-  private readonly _projects = inject(ProjectApiService);
+  private readonly _activity = inject(ActivityRepository);
   private readonly _projectsRepo = inject(ProjectsRepository);
   private readonly _router = inject(Router);
   private readonly _dialog = inject(DialogService);
@@ -81,7 +91,7 @@ export class DashboardComponent implements OnDestroy {
       this._unsubActivity = null;
       this.activity.set([]);
       if (tid) {
-        this._unsubActivity = this._projects.subscribeTenantActivity(tid, 12, (rows) =>
+        this._unsubActivity = this._activity.subscribeTenantActivity(tid, 12, (rows) =>
           this.activity.set(rows),
         );
       }
@@ -92,25 +102,8 @@ export class DashboardComponent implements OnDestroy {
     this._unsubActivity?.();
   }
 
-  public activityIcon(type: IActivity['type']): string {
-    switch (type) {
-      case 'element-added':
-        return 'plus';
-      case 'element-deleted':
-        return 'minus';
-      case 'ai-generated':
-        return 'sparkles';
-      case 'comment-added':
-        return 'message-circle';
-      case 'comment-resolved':
-        return 'check';
-      case 'project-created':
-        return 'diamond';
-      case 'project-renamed':
-        return 'diamond';
-      default:
-        return 'diamond';
-    }
+  public activityIcon(type: ActivityType): string {
+    return ACTIVITY_ICON[type];
   }
 
   public onSearchInput(value: string): void {
@@ -122,7 +115,7 @@ export class DashboardComponent implements OnDestroy {
     if (!tid) return;
     this.creating.set(true);
     try {
-      const pid = await this._projects.createProject(
+      const pid = await this._projectsRepo.createProject(
         tid,
         `Untitled ${new Date().toLocaleDateString()}`,
       );
@@ -150,7 +143,7 @@ export class DashboardComponent implements OnDestroy {
     if (!name) return;
     const trimmed = name.trim();
     if (trimmed === p.name) return;
-    await this._projects.renameProject(tid, p.id, trimmed);
+    await this._projectsRepo.renameProject(tid, p.id, trimmed);
   }
 
   public async softDelete(p: IProject): Promise<void> {
@@ -164,7 +157,7 @@ export class DashboardComponent implements OnDestroy {
       destructive: true,
     });
     if (!ok) return;
-    await this._projects.softDeleteProject(tid, p.id);
+    await this._projectsRepo.softDeleteProject(tid, p.id);
   }
 
   public openMembers(): void {

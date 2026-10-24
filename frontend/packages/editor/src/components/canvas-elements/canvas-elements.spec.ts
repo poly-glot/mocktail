@@ -1,12 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { CollabService } from '@mocktail/collab';
 import { IWireElement } from '@mocktail/projects';
 import { Heart, LUCIDE_ICONS, LucideIconProvider, Smile } from 'lucide-angular';
 import { EditorElementsStateService } from '../../services/elements-state/elements-state.service';
 import { EditorInlineEditService } from '../../services/inline-edit/inline-edit.service';
 import { EditorInspectorService } from '../../services/inspector/inspector.service';
-import { EditorSessionService } from '../../services/session/session.service';
+import { InlineTextDirective } from '../../directives/inline-text/inline-text.directive';
 import { ElBarChartComponent } from './el-bar-chart.component';
 import { ElButtonComponent } from './el-button.component';
 import { ElCardComponent } from './el-card.component';
@@ -52,30 +52,25 @@ describe('Canvas element components — inline edit dispatch', () => {
             flushPendingEdits: jasmine.createSpy('flushPendingEdits'),
           } as Partial<CollabService>,
         },
-        {
-          provide: EditorSessionService,
-          useValue: {
-            tid: signal('t1'),
-            pid: signal('p1'),
-          },
-        },
       ],
     });
     inline = TestBed.inject(EditorInlineEditService);
     state = TestBed.inject(EditorElementsStateService);
   });
 
-  function createTextHost(el: IWireElement): {
-    fixture: ComponentFixture<ElTextComponent>;
-    cmp: ElTextComponent;
-  } {
+  function inlineDirective(fixture: ComponentFixture<unknown>): InlineTextDirective {
+    return fixture.debugElement
+      .query(By.directive(InlineTextDirective))
+      .injector.get(InlineTextDirective);
+  }
+
+  function createTextHost(el: IWireElement): { cmp: InlineTextDirective } {
     state.list.set([el]);
     inline.begin(el.id);
     const fixture = TestBed.createComponent(ElTextComponent);
     fixture.componentRef.setInput('el', el);
-    const cmp = fixture.componentInstance;
     fixture.detectChanges();
-    return { fixture, cmp };
+    return { cmp: inlineDirective(fixture) };
   }
 
   it('Escape cancels inline edit and clears editingId without committing', () => {
@@ -101,7 +96,7 @@ describe('Canvas element components — inline edit dispatch', () => {
     host.textContent = 'Click me';
     const ev = new KeyboardEvent('keydown', { key: 'Enter' });
     Object.defineProperty(ev, 'currentTarget', { value: host });
-    fixture.componentInstance.onKeydown(ev);
+    inlineDirective(fixture).onKeydown(ev);
     expect(inline.editingId()).toBeNull();
     const [, patch] = sendEdit.calls.mostRecent().args as [string, Partial<IWireElement>];
     expect(patch.text).toBe('Click me');
@@ -129,7 +124,7 @@ describe('Canvas element components — inline edit dispatch', () => {
     host.textContent = 'Click me';
     const ev = new FocusEvent('blur');
     Object.defineProperty(ev, 'currentTarget', { value: host });
-    fixture.componentInstance.onBlur(ev);
+    inlineDirective(fixture).onBlur(ev);
     const [, patch] = sendEdit.calls.mostRecent().args as [string, Partial<IWireElement>];
     expect(patch.text).toBe('Click me');
   });
@@ -182,7 +177,7 @@ describe('Canvas element components — inline edit dispatch', () => {
     spyOn(ev, 'preventDefault').and.callFake(() => {
       prevented = true;
     });
-    fix.componentInstance.onKeydown(ev);
+    inlineDirective(fix).onKeydown(ev);
     expect(prevented).toBeTrue();
     document.body.removeChild(host);
   });
@@ -208,7 +203,7 @@ describe('Canvas element components — inline edit dispatch', () => {
     spyOn(ev, 'preventDefault').and.callFake(() => {
       prevented = true;
     });
-    fix.componentInstance.onKeydown(ev);
+    inlineDirective(fix).onKeydown(ev);
     expect(prevented).toBeTrue();
     document.body.removeChild(host);
   });
@@ -252,7 +247,7 @@ describe('Canvas element components — inline edit dispatch', () => {
     const host = document.createElement('span');
     const ev = new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true });
     Object.defineProperty(ev, 'currentTarget', { value: host });
-    fix.componentInstance.onKeydown(ev);
+    inlineDirective(fix).onKeydown(ev);
     expect(inline.editingId()).toBe('h1');
   });
 
@@ -267,7 +262,7 @@ describe('Canvas element components — inline edit dispatch', () => {
     host.textContent = 'discarded';
     const ev = new KeyboardEvent('keydown', { key: 'Escape' });
     Object.defineProperty(ev, 'currentTarget', { value: host });
-    fix.componentInstance.onKeydown(ev);
+    inlineDirective(fix).onKeydown(ev);
     expect(inline.editingId()).toBeNull();
   });
 
@@ -298,12 +293,12 @@ describe('Canvas element components — inline edit dispatch', () => {
       it('exercises every keydown / blur / paste branch', () => {
         const el = makeEl({ id: 'x', type: c.type, text: 'orig' });
         state.list.set([el]);
-        const make = (): InstanceType<typeof c.cmp> => {
+        const make = (): InlineTextDirective => {
           inline.begin('x');
           const fix = TestBed.createComponent(c.cmp as never);
           (fix.componentRef as { setInput: (k: string, v: unknown) => void }).setInput('el', el);
           fix.detectChanges();
-          return fix.componentInstance as InstanceType<typeof c.cmp>;
+          return inlineDirective(fix);
         };
         const host = (): HTMLElement => {
           const h = document.createElement('span');
@@ -318,7 +313,7 @@ describe('Canvas element components — inline edit dispatch', () => {
           return h;
         };
         const fire = (
-          inst: InstanceType<typeof c.cmp>,
+          inst: InlineTextDirective,
           method: 'onKeydown' | 'onBlur' | 'onPaste',
           ev: Event,
         ): void => {
@@ -463,7 +458,7 @@ describe('Canvas element components — inline edit dispatch', () => {
     hHost.textContent = 'New';
     const hEv = new KeyboardEvent('keydown', { key: 'Enter' });
     Object.defineProperty(hEv, 'currentTarget', { value: hHost });
-    headingFix.componentInstance.onKeydown(hEv);
+    inlineDirective(headingFix).onKeydown(hEv);
     expect(inline.editingId()).toBeNull();
 
     const link = makeEl({ id: 'a1', type: 'link', text: 'Old' });
@@ -476,7 +471,7 @@ describe('Canvas element components — inline edit dispatch', () => {
     aHost.textContent = 'NewLink';
     const aEv = new FocusEvent('blur');
     Object.defineProperty(aEv, 'currentTarget', { value: aHost });
-    linkFix.componentInstance.onBlur(aEv);
+    inlineDirective(linkFix).onBlur(aEv);
     const calls = sendEdit.calls.allArgs() as [string, Partial<IWireElement>][];
     expect(calls.some(([id, p]) => id === 'a1' && p.text === 'NewLink')).toBeTrue();
   });
@@ -494,10 +489,6 @@ describe('Canvas element components — render', () => {
             sendDeleteFields: jasmine.createSpy('sendDeleteFields'),
             flushPendingEdits: jasmine.createSpy('flushPendingEdits'),
           } as Partial<CollabService>,
-        },
-        {
-          provide: EditorSessionService,
-          useValue: { tid: signal('t1'), pid: signal('p1') },
         },
         {
           provide: EditorInspectorService,
@@ -661,7 +652,7 @@ describe('Canvas element components — render', () => {
     expect(fix.nativeElement.querySelector('img.image-src')).toBeNull();
   });
 
-  it('ElImage onLoadError calls inspector.removeImage with current tid/pid + el id', () => {
+  it('ElImage onLoadError calls inspector.removeImage with the element id', () => {
     const inspSpy = TestBed.inject(
       EditorInspectorService,
     ) as jasmine.SpyObj<EditorInspectorService>;
@@ -669,7 +660,7 @@ describe('Canvas element components — render', () => {
     fix.componentRef.setInput('el', makeEl({ id: 'm', type: 'image' }));
     fix.detectChanges();
     fix.componentInstance.onLoadError();
-    expect(inspSpy.removeImage).toHaveBeenCalledWith('t1', 'p1', 'm');
+    expect(inspSpy.removeImage).toHaveBeenCalledWith('m');
   });
 
   it('ElButton, ElText, ElHeading, ElLink default text shows when none set', () => {

@@ -14,8 +14,4 @@ export class EditorClipboardService {
   public peek(): IWireElement | null {
     return this._el();
   }
-
-  public clear(): void {
-    this._el.set(null);
-  }
 }

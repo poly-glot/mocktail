@@ -25,6 +25,10 @@ export function stripUndefined<T>(value: T): T {
   return value;
 }
 
+export function toWirePatch(el: IWireElement): Record<string, unknown> {
+  return stripUndefined<Record<string, unknown>>({ ...el });
+}
+
 /**
  * Decode a Firestore element document into an IWireElement, applying
  * type-specific defaults for missing variant/level fields.

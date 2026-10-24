@@ -18,9 +18,6 @@ import {
   snapToGuides,
 } from './snapping';
 
-export type { HandleDir, IGuideLine, IMoveResult, ISnapContext } from './snapping';
-export { GUIDE_THRESHOLD, snapResizeEdges, snapToGuides } from './snapping';
-
 export interface IDragState {
   readonly id: string;
   readonly pageId: string;
@@ -412,16 +409,6 @@ export class CanvasGestureStore {
     if (this._marqueeStart) {
       this._updateMarquee(ev);
     }
-  }
-
-  public onCanvasPointerCancel(): void {
-    this._drag = null;
-    this._resize = null;
-    this._rotate = null;
-    this.guides.set([]);
-    this._multiDragInitial = null;
-    this._marqueeStart = null;
-    this._sel.setMarquee(null);
   }
 
   public onCanvasPointerUp(): void {

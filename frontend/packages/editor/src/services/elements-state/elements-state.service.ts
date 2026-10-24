@@ -26,12 +26,7 @@ export class EditorElementsStateService {
     });
   }
 
-  public async patch(
-    _tid: string,
-    _pid: string,
-    id: string,
-    patch: Partial<IWireElement>,
-  ): Promise<void> {
+  public patch(id: string, patch: Partial<IWireElement>): void {
     const el = this.getById(id);
     if (!el) return;
     const next: IWireElement = { ...el, ...patch };

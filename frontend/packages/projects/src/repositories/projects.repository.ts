@@ -14,6 +14,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { IGridConfig, IProject } from '../interfaces/project.interface';
+import { stripUndefined } from './element-codec';
 import { firestoreSignal } from './firestore-signal';
 
 @Injectable({ providedIn: 'root' })
@@ -114,6 +115,13 @@ export class ProjectsRepository {
   public async softDeleteProject(tid: string, pid: string): Promise<void> {
     await updateDoc(doc(this._firebase.db, 'tenants', tid, 'projects', pid), {
       deleted: true,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  public async updateGridConfig(tid: string, pid: string, gridConfig: IGridConfig): Promise<void> {
+    await updateDoc(doc(this._firebase.db, 'tenants', tid, 'projects', pid), {
+      gridConfig: stripUndefined(gridConfig),
       updatedAt: serverTimestamp(),
     });
   }

@@ -1,13 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { IMember } from '../../services/tenant/tenant.interface';
 import { TenantService } from '../../services/tenant/tenant.service';
-
-interface IMemberRow {
-  id: string;
-  role: string;
-  displayName?: string;
-  email?: string;
-  color?: string;
-}
 
 @Component({
   selector: 'mk-members',
@@ -17,7 +10,7 @@ interface IMemberRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MembersComponent implements OnInit {
-  public readonly members = signal<IMemberRow[]>([]);
+  public readonly members = signal<IMember[]>([]);
   public readonly inviteUrl = signal<string | null>(null);
 
   private readonly _tenants = inject(TenantService);

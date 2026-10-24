@@ -4,10 +4,8 @@ import {
   BarChart3,
   CheckSquare,
   Circle as CircleIcon,
-  Component as ComponentIcon,
   Heading1,
   Image,
-  Layers,
   LayoutTemplate,
   Link as LinkIcon,
   List as ListIcon,
@@ -91,6 +89,33 @@ export const PALETTES: readonly IPalette[] = [
   },
 ];
 
+export const PALETTE_ITEM_BY_TYPE: ReadonlyMap<ElementType, IPaletteItem> = new Map(
+  PALETTES.flatMap((p) => p.items).map((item) => [item.type, item]),
+);
+
+export const PALETTE_ICONS = {
+  BarChart3,
+  CheckSquare,
+  Circle: CircleIcon,
+  Heading1,
+  Image,
+  LayoutTemplate,
+  Link: LinkIcon,
+  List: ListIcon,
+  Menu,
+  Minus,
+  MousePointer2,
+  PieChart,
+  Smartphone,
+  Smile: SmileIcon,
+  Square,
+  Table,
+  Tag,
+  TextCursorInput,
+  ToggleRight,
+  Type,
+};
+
 export function filterPalettes(palettes: readonly IPalette[], query: string): IPalette[] {
   const q = query.trim().toLowerCase();
   if (!q) return palettes.map((c) => ({ ...c, items: [...c.items] }));
@@ -113,32 +138,7 @@ export function filterPalettes(palettes: readonly IPalette[], query: string): IP
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({
-        BarChart3,
-        CheckSquare,
-        Circle: CircleIcon,
-        Component: ComponentIcon,
-        Heading1,
-        Image,
-        Layers,
-        LayoutTemplate,
-        Link: LinkIcon,
-        List: ListIcon,
-        Menu,
-        Minus,
-        MousePointer2,
-        PanelLeftClose,
-        PieChart,
-        Search,
-        Smartphone,
-        Smile: SmileIcon,
-        Square,
-        Table,
-        Tag,
-        TextCursorInput,
-        ToggleRight,
-        Type,
-      }),
+      useValue: new LucideIconProvider({ ...PALETTE_ICONS, PanelLeftClose, Search }),
     },
   ],
   templateUrl: './palette.component.html',
@@ -146,17 +146,14 @@ export function filterPalettes(palettes: readonly IPalette[], query: string): IP
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaletteComponent {
-  public readonly categories = input<readonly IPalette[]>(PALETTES);
   public readonly collapsed = input<boolean>(false);
 
   public readonly searchValue = signal('');
 
-  public readonly totalCount = computed(() =>
-    this.categories().reduce((sum, p) => sum + p.items.length, 0),
-  );
+  public readonly totalCount = PALETTE_ITEM_BY_TYPE.size;
 
   public readonly filteredCategories = computed<IPalette[]>(() =>
-    filterPalettes(this.categories(), this.searchValue()),
+    filterPalettes(PALETTES, this.searchValue()),
   );
 
   public readonly collapseToggle = output<void>();

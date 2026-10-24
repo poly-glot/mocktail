@@ -32,21 +32,4 @@ describe('AiService', () => {
     await expectAsync(service.generate('p')).toBeRejected();
     expect(service.busy()).toBe(false);
   });
-
-  it('review() returns [] on non-ok', async () => {
-    spyOn(window, 'fetch').and.resolveTo(new Response('err', { status: 500 }));
-    const issues = await service.review([]);
-    expect(issues).toEqual([]);
-  });
-
-  it('review() returns issues from response body', async () => {
-    spyOn(window, 'fetch').and.resolveTo(
-      new Response(JSON.stringify({ issues: [{ severity: 'warn', message: 'm' }] }), {
-        status: 200,
-      }),
-    );
-    const issues = await service.review([]);
-    expect(issues.length).toBe(1);
-    expect(issues[0].severity).toBe('warn');
-  });
 });

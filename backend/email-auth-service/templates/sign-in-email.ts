@@ -1,4 +1,4 @@
-export function buildSignInEmail(signInLink: string, _email: string): string {
+export function buildSignInEmail(signInLink: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

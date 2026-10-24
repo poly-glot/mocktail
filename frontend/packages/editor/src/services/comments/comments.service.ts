@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { ProjectApiService } from '@mocktail/projects';
+import { ActivityRepository, CommentsRepository } from '@mocktail/projects';
 
 export interface ICommentDraft {
   readonly x: number;
@@ -9,7 +9,8 @@ export interface ICommentDraft {
 
 @Injectable({ providedIn: 'root' })
 export class EditorCommentsService {
-  private readonly _projects = inject(ProjectApiService);
+  private readonly _comments = inject(CommentsRepository);
+  private readonly _activity = inject(ActivityRepository);
 
   public readonly commentMode = signal(false);
   public readonly draft = signal<ICommentDraft | null>(null);
@@ -54,13 +55,13 @@ export class EditorCommentsService {
       return;
     }
     const text = d.text.trim();
-    const id = await this._projects.addComment(tid, pid, {
+    const id = await this._comments.addComment(tid, pid, {
       text,
       x: d.x,
       y: d.y,
       pageId: pageId ?? undefined,
     });
-    await this._projects.writeActivity(
+    await this._activity.writeActivity(
       tid,
       pid,
       'comment-added',
@@ -71,8 +72,8 @@ export class EditorCommentsService {
   }
 
   public async resolveComment(tid: string, pid: string, cid: string): Promise<void> {
-    await this._projects.resolveComment(tid, pid, cid, true);
-    await this._projects.writeActivity(tid, pid, 'comment-resolved', 'resolved a comment');
+    await this._comments.resolveComment(tid, pid, cid, true);
+    await this._activity.writeActivity(tid, pid, 'comment-resolved', 'resolved a comment');
     this.closePin();
   }
 }

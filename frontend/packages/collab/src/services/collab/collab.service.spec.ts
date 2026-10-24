@@ -144,6 +144,199 @@ describe('CollabService', () => {
     expect(service.connected()).toBe(false);
   });
 
+  describe('inbound frames', () => {
+    let listeners: Record<string, (ev?: unknown) => void>;
+    let sent: string[];
+    let fake: Partial<WebSocket> & { readyState: number };
+
+    const receive = (frame: unknown): void =>
+      listeners['message']?.({
+        data: typeof frame === 'string' ? frame : JSON.stringify(frame),
+      } as MessageEvent);
+
+    beforeEach(() => {
+      listeners = {};
+      sent = [];
+      fake = {
+        readyState: WebSocket.OPEN,
+        addEventListener: (t: string, cb: (ev?: unknown) => void) => {
+          listeners[t] = cb;
+        },
+        send: ((text: string) => sent.push(text)) as WebSocket['send'],
+        close: jasmine.createSpy('close'),
+      };
+      spyOn(window, 'WebSocket').and.returnValue(fake as WebSocket);
+      service.connect('tenant-a', 'proj1');
+    });
+
+    it('hello adds an offscreen peer, updates it on repeat, and ignores self and anonymous', () => {
+      receive({ type: 'hello', userId: 'p1' });
+      expect(service.cursors().get('p1')).toEqual(
+        jasmine.objectContaining({ name: 'Guest', color: '#0a0a0a', x: -999, y: -999 }),
+      );
+
+      receive({ type: 'hello', userId: 'p1', name: 'Pat' });
+      expect(service.cursors().get('p1')?.name).toBe('Pat');
+      expect(service.cursors().get('p1')?.color).toBe('#0a0a0a');
+
+      receive({ type: 'hello', userId: 'u1', name: 'Me' });
+      receive({ type: 'hello' });
+      expect(service.cursors().size).toBe(1);
+    });
+
+    it('cursor defaults missing fields, keeps a known peer name, and ignores self', () => {
+      receive({ type: 'cursor' });
+      expect(service.cursors().get('unknown')).toEqual(
+        jasmine.objectContaining({ name: 'Guest', color: '#0a0a0a', x: 0, y: 0 }),
+      );
+
+      receive({ type: 'hello', userId: 'p1', name: 'Pat', color: '#111' });
+      receive({ type: 'cursor', userId: 'p1', x: 3 });
+      expect(service.cursors().get('p1')).toEqual(
+        jasmine.objectContaining({ name: 'Pat', color: '#111', x: 3, y: 0 }),
+      );
+
+      receive({ type: 'cursor', userId: 'u1', x: 9 });
+      expect(service.cursors().has('u1')).toBe(false);
+    });
+
+    it('roster tolerates a missing list and skips self, duplicates and nameless members', () => {
+      receive({ type: 'roster' });
+      expect(service.cursors().size).toBe(0);
+
+      receive({ type: 'hello', userId: 'p1', name: 'Pat' });
+      receive({
+        type: 'roster',
+        members: [{ userId: 'u1' }, { userId: 'p1', name: 'Other' }, {}, null, { userId: 'p2' }],
+      });
+      expect([...service.cursors().keys()]).toEqual(['p1', 'p2']);
+      expect(service.cursors().get('p1')?.name).toBe('Pat');
+    });
+
+    it('leave, edit, delete and deleteFields default their fields and skip empty ids', () => {
+      receive({ type: 'leave' });
+      receive({ type: 'edit' });
+      expect(service.lastRemoteEdit()).toEqual({ elementId: '', patch: {}, from: '' });
+
+      receive({ type: 'delete' });
+      expect(service.lastRemoteDelete()).toBeNull();
+      receive({ type: 'delete', elementId: 'e1' });
+      expect(service.lastRemoteDelete()).toEqual({ elementId: 'e1', from: '' });
+
+      receive({ type: 'deleteFields', elementId: 'e1' });
+      receive({ type: 'deleteFields', fields: ['x'] });
+      expect(service.lastRemoteDeleteFields()).toBeNull();
+      receive({ type: 'deleteFields', elementId: 'e1', fields: [1] });
+      expect(service.lastRemoteDeleteFields()).toEqual({
+        elementId: 'e1',
+        fields: ['1'],
+        from: '',
+      });
+    });
+
+    it('ignores unknown types, non-object payloads and binary frames', () => {
+      receive({ type: 'nope' });
+      receive('null');
+      receive('42');
+      listeners['message']?.({ data: new ArrayBuffer(1) } as MessageEvent);
+      expect(service.cursors().size).toBe(0);
+    });
+
+    it('connect() to the same room is a no-op; a new room reopens the socket', () => {
+      const ws = window.WebSocket as unknown as jasmine.Spy;
+      service.connect('tenant-a', 'proj1');
+      expect(ws.calls.count()).toBe(1);
+
+      service.connect('tenant-a', 'proj2');
+      expect(ws.calls.count()).toBe(2);
+      expect(ws.calls.mostRecent().args[0]).toContain('/api/collab/tenant-a/proj2');
+    });
+
+    it('falls back to the single-segment path when tenantId is empty', () => {
+      service.connect('', 'proj3');
+      const url = (window.WebSocket as unknown as jasmine.Spy).calls.mostRecent().args[0];
+      expect(url).toMatch(/\/api\/collab\/proj3$/);
+    });
+
+    it('reconnects with backoff after an unintentional close and not after disconnect()', () => {
+      jasmine.clock().install();
+      try {
+        const ws = window.WebSocket as unknown as jasmine.Spy;
+        listeners['close']?.();
+        jasmine.clock().tick(499);
+        expect(ws.calls.count()).toBe(1);
+        jasmine.clock().tick(1);
+        expect(ws.calls.count()).toBe(2);
+
+        listeners['close']?.();
+        listeners['close']?.();
+        jasmine.clock().tick(1_000);
+        expect(ws.calls.count()).toBe(3);
+
+        service.disconnect();
+        listeners['close']?.();
+        jasmine.clock().tick(60_000);
+        expect(ws.calls.count()).toBe(3);
+      } finally {
+        jasmine.clock().uninstall();
+      }
+    });
+
+    it('open sends hello then drains frames queued while closed; error flips connected off', async () => {
+      fake.readyState = WebSocket.CONNECTING;
+      service.sendSelection('queued');
+      expect(sent.length).toBe(0);
+
+      fake.readyState = WebSocket.OPEN;
+      listeners['open']?.();
+      await Promise.resolve();
+      expect(sent[0]).toContain('"type":"hello"');
+      expect(sent[0]).toContain('"userId":"u1"');
+      expect(sent[1]).toContain('"elementId":"queued"');
+
+      listeners['error']?.();
+      expect(service.connected()).toBe(false);
+    });
+
+    it('open skips hello when the socket closed before auth resolved', async () => {
+      fake.readyState = WebSocket.CLOSED;
+      listeners['open']?.();
+      await Promise.resolve();
+      expect(sent.length).toBe(0);
+    });
+  });
+
+  describe('identity fallbacks', () => {
+    const sendSelectionFrame = (): string => {
+      const sent: string[] = [];
+      const fake: Partial<WebSocket> = {
+        readyState: WebSocket.OPEN,
+        addEventListener: () => undefined,
+        send: ((text: string) => sent.push(text)) as WebSocket['send'],
+        close: jasmine.createSpy('close'),
+      };
+      spyOn(window, 'WebSocket').and.returnValue(fake as WebSocket);
+      service.connect('tenant-a', 'proj1');
+      service.sendSelection('el');
+      return sent.find((t) => t.includes('"type":"selection"')) ?? '';
+    };
+
+    it('uses the email local part when displayName is missing', () => {
+      (TestBed.inject(AuthService) as unknown as FakeAuthService).user.set({
+        uid: 'u2',
+        email: 'pat@example.com',
+      });
+      expect(sendSelectionFrame()).toContain('"name":"pat"');
+    });
+
+    it('falls back to anon/Guest when signed out', () => {
+      (TestBed.inject(AuthService) as unknown as FakeAuthService).user.set(null);
+      const frame = sendSelectionFrame();
+      expect(frame).toContain('"userId":"anon"');
+      expect(frame).toContain('"name":"Guest"');
+    });
+  });
+
   it('sendDelete emits a delete frame and flushes pending edits first', () => {
     const sent: string[] = [];
     const fake: Partial<WebSocket> = {

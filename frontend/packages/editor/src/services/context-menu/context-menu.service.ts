@@ -17,8 +17,4 @@ export class EditorContextMenuService {
   public close(): void {
     this.menu.set(null);
   }
-
-  public isOpenFor(elId: string): boolean {
-    return this.menu()?.elId === elId;
-  }
 }

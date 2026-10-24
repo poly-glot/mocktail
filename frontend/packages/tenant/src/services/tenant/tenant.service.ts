@@ -16,7 +16,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { distinctUntilChanged } from 'rxjs';
-import { IMembership, ITenant, TenantRole } from './tenant.interface';
+import { IMember, IMembership, ITenant, TenantRole } from './tenant.interface';
 
 const LAST_TENANT_KEY = 'mocktail:lastTenant';
 
@@ -46,13 +46,6 @@ function randomSuffix(len = 4): string {
   let out = '';
   for (let i = 0; i < len; i++) out += alphabet[arr[i] % alphabet.length];
   return out;
-}
-
-function pickColor(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-  const palette = ['#0a0a0a', '#1f2937', '#b45309', '#065f46', '#1e3a8a', '#7c3aed'];
-  return palette[Math.abs(h) % palette.length];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -168,7 +161,6 @@ export class TenantService {
           role: 'owner',
           displayName: user.displayName ?? user.email?.split('@')[0] ?? 'Owner',
           email: user.email ?? '',
-          color: pickColor(user.uid),
           createdAt: serverTimestamp(),
         });
         await batch.commit();
@@ -254,7 +246,6 @@ export class TenantService {
       role,
       displayName: user.displayName ?? user.email?.split('@')[0] ?? 'Member',
       email: user.email ?? '',
-      color: pickColor(user.uid),
       createdAt: serverTimestamp(),
     });
     try {
@@ -270,19 +261,11 @@ export class TenantService {
     return tenantId;
   }
 
-  public async listMembers(): Promise<
-    { id: string; role: string; displayName?: string; email?: string; color?: string }[]
-  > {
+  public async listMembers(): Promise<IMember[]> {
     const tid = this.currentTenantId();
     if (!tid) return [];
     const snap = await getDocs(collection(this._firebase.db, 'tenants', tid, 'members'));
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) })) as {
-      id: string;
-      role: string;
-      displayName?: string;
-      email?: string;
-      color?: string;
-    }[];
+    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<IMember, 'id'>) }));
   }
 
   public async getTenant(tid: string): Promise<ITenant | null> {

@@ -3,7 +3,15 @@ import { EnvironmentInjector, runInInjectionContext, signal } from '@angular/cor
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { DialogService } from '@mocktail/cdk';
 import { CollabService } from '@mocktail/collab';
-import { AiService, IWireElement, ProjectApiService } from '@mocktail/projects';
+import {
+  ActivityRepository,
+  AiService,
+  CommentsRepository,
+  ElementsRepository,
+  IWireElement,
+  PagesRepository,
+  ProjectsRepository,
+} from '@mocktail/projects';
 import { TenantService } from '@mocktail/tenant';
 import { of } from 'rxjs';
 import { EditorComponent } from './editor.component';
@@ -38,7 +46,8 @@ describe('EditorComponent', () => {
   let cmp: EditorComponent;
   let drr: CanvasGestureStore;
   let editorSvc: EditorElementEditorService;
-  let projects: jasmine.SpyObj<ProjectApiService>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let repos: jasmine.SpyObj<any>;
   let collab: {
     connected: ReturnType<typeof signal<boolean>>;
     cursors: ReturnType<typeof signal<Map<string, unknown>>>;
@@ -57,32 +66,24 @@ describe('EditorComponent', () => {
   let dialog: jasmine.SpyObj<DialogService>;
 
   beforeEach(async () => {
-    projects = jasmine.createSpyObj<ProjectApiService>('ProjectApiService', [
+    repos = jasmine.createSpyObj('repositories', [
       'subscribePages',
       'subscribeElements',
       'subscribeComments',
       'subscribeProjectDoc',
-      'upsertElement',
-      'deleteElement',
       'writeActivity',
       'updateGridConfig',
       'addPage',
       'deletePage',
-      'addElements',
-      'replaceElements',
       'addComment',
       'resolveComment',
-      'patchElements',
     ]);
-    projects.subscribePages.and.returnValue(() => undefined);
-    projects.subscribeElements.and.returnValue(() => undefined);
-    projects.subscribeComments.and.returnValue(() => undefined);
-    projects.subscribeProjectDoc.and.returnValue(() => undefined);
-    projects.upsertElement.and.returnValue(Promise.resolve());
-    projects.deleteElement.and.returnValue(Promise.resolve());
-    projects.writeActivity.and.returnValue(Promise.resolve());
-    projects.updateGridConfig.and.returnValue(Promise.resolve());
-    projects.patchElements.and.returnValue(Promise.resolve());
+    repos.subscribePages.and.returnValue(() => undefined);
+    repos.subscribeElements.and.returnValue(() => undefined);
+    repos.subscribeComments.and.returnValue(() => undefined);
+    repos.subscribeProjectDoc.and.returnValue(() => undefined);
+    repos.writeActivity.and.returnValue(Promise.resolve());
+    repos.updateGridConfig.and.returnValue(Promise.resolve());
 
     collab = {
       connected: signal(false),
@@ -111,7 +112,11 @@ describe('EditorComponent', () => {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ tid: 't1', pid: 'p1' })) },
         },
-        { provide: ProjectApiService, useValue: projects },
+        { provide: PagesRepository, useValue: repos },
+        { provide: CommentsRepository, useValue: repos },
+        { provide: ProjectsRepository, useValue: repos },
+        { provide: ElementsRepository, useValue: repos },
+        { provide: ActivityRepository, useValue: repos },
         {
           provide: TenantService,
           useValue: {
@@ -186,23 +191,6 @@ describe('EditorComponent', () => {
     expect(cmp.isTextual('checkbox')).toBe(false);
   });
 
-  it('hasTextField excludes divider/image/rect/checkbox/toggle/charts/phone', () => {
-    expect(cmp.hasTextField('divider')).toBe(false);
-    expect(cmp.hasTextField('image')).toBe(false);
-    expect(cmp.hasTextField('rect')).toBe(false);
-    expect(cmp.hasTextField('checkbox')).toBe(false);
-    expect(cmp.hasTextField('toggle')).toBe(false);
-    expect(cmp.hasTextField('bar-chart')).toBe(false);
-    expect(cmp.hasTextField('donut')).toBe(false);
-    expect(cmp.hasTextField('phone-frame')).toBe(false);
-    expect(cmp.hasTextField('text')).toBe(true);
-    expect(cmp.hasTextField('heading')).toBe(true);
-    expect(cmp.hasTextField('link')).toBe(true);
-    expect(cmp.hasTextField('button')).toBe(true);
-    expect(cmp.hasTextField('tag')).toBe(true);
-    expect(cmp.hasTextField('card')).toBe(true);
-  });
-
   it('iconForType resolves known icons (via layers-panel util)', () => {
     expect(iconForType('heading')).toBe('heading-1');
     expect(iconForType('link')).toBe('link');
@@ -218,16 +206,11 @@ describe('EditorComponent', () => {
 
   // ── Heading level ─────────────────────────────────────────────────
 
-  it('setHeadingLevel ignores NaN and out-of-range values', async () => {
+  it('setHeadingLevel patches the selected heading', () => {
     const heading = makeEl({ id: 'h1', type: 'heading', level: 1 });
     cmp.elements.set([heading]);
     cmp.selectedId.set('h1');
-    await editorSvc.setHeadingLevel('t1', 'p1', 'abc');
-    expect(collab.sendEdit).not.toHaveBeenCalled();
-    await editorSvc.setHeadingLevel('t1', 'p1', '0');
-    await editorSvc.setHeadingLevel('t1', 'p1', '7');
-    expect(collab.sendEdit).not.toHaveBeenCalled();
-    await editorSvc.setHeadingLevel('t1', 'p1', '3');
+    editorSvc.setHeadingLevel(3);
     expect(collab.sendEdit).toHaveBeenCalledWith('h1', { level: 3 });
     const updated = cmp.elements().find((e) => e.id === 'h1')!;
     expect(updated.level).toBe(3);
@@ -274,7 +257,7 @@ describe('EditorComponent', () => {
     const el = makeEl({ id: 't1', type: 'text' });
     cmp.elements.set([el]);
     cmp.selectedId.set('t1');
-    await editorSvc.setColor('t1', 'p1', '  #FF00AA  ');
+    await editorSvc.setColor('  #FF00AA  ');
     expect(collab.sendEdit).toHaveBeenCalledWith('t1', { color: '#ff00aa' });
     const updated = cmp.elements().find((e) => e.id === 't1')!;
     expect(updated.color).toBe('#ff00aa');
@@ -285,19 +268,18 @@ describe('EditorComponent', () => {
     cmp.elements.set([el]);
     cmp.selectedId.set('t1');
     collab.sendEdit.calls.reset();
-    await editorSvc.setColor('t1', 'p1', 'not-a-color');
-    await editorSvc.setColor('t1', 'p1', '#zzz');
-    await editorSvc.setColor('t1', 'p1', '#12345'); // 5 chars — invalid
-    await editorSvc.setColor('t1', 'p1', 'red'); // named color — not hex
+    await editorSvc.setColor('not-a-color');
+    await editorSvc.setColor('#zzz');
+    await editorSvc.setColor('#12345'); // 5 chars — invalid
+    await editorSvc.setColor('red'); // named color — not hex
     expect(collab.sendEdit).not.toHaveBeenCalled();
-    expect(projects.upsertElement).not.toHaveBeenCalled();
   });
 
   it('setColor with empty value delegates to clearColor (forwarded as sendDeleteFields)', async () => {
     const el = makeEl({ id: 't1', type: 'text', color: '#123456' });
     cmp.elements.set([el]);
     cmp.selectedId.set('t1');
-    await editorSvc.setColor('t1', 'p1', '');
+    await editorSvc.setColor('');
     expect(collab.sendDeleteFields).toHaveBeenCalledWith('t1', ['color']);
     const after = cmp.elements().find((e) => e.id === 't1');
     expect(after?.color).toBeUndefined();
@@ -307,7 +289,7 @@ describe('EditorComponent', () => {
     const el = makeEl({ id: 't1', type: 'text', color: '#123456' });
     cmp.elements.set([el]);
     cmp.selectedId.set('t1');
-    void editorSvc.clearColor('t1', 'p1');
+    void editorSvc.clearColor();
     const after = cmp.elements().find((e) => e.id === 't1');
     expect(after?.color).toBeUndefined();
     expect(collab.sendDeleteFields).toHaveBeenCalledWith('t1', ['color']);
@@ -343,7 +325,7 @@ describe('EditorComponent', () => {
   it('reorderLayer: no-op when fromId === toId', async () => {
     cmp.elements.set([makeEl({ id: 'a', type: 'rect', zIndex: 1 })]);
     await cmp.reorderLayer('a', 'a', 'above');
-    expect(projects.patchElements).not.toHaveBeenCalled();
+    expect(collab.sendEdit).not.toHaveBeenCalled();
   });
 
   it('onLayerReorder delegates to reorderLayer', async () => {
@@ -547,17 +529,16 @@ describe('EditorComponent', () => {
     const el = makeEl({ id: 's1', type: 'rect', x: 0 });
     cmp.elements.set([el]);
     cmp.selectedId.set('s1');
-    editorSvc.updateSelected('t1', 'p1', { x: 42 } as Patch);
+    editorSvc.updateSelected({ x: 42 } as Patch);
     const updated = cmp.elements().find((e) => e.id === 's1')!;
     expect(updated.x).toBe(42);
     expect(collab.sendEdit).toHaveBeenCalledWith('s1', { x: 42 });
     expect(collab.flushPendingEdits).toHaveBeenCalled();
-    expect(projects.upsertElement).not.toHaveBeenCalled();
   });
 
   it('updateSelected is a no-op when nothing selected', () => {
     cmp.selectedId.set(null);
-    editorSvc.updateSelected('t1', 'p1', { x: 1 });
+    editorSvc.updateSelected({ x: 1 });
     expect(collab.sendEdit).not.toHaveBeenCalled();
     expect(collab.flushPendingEdits).not.toHaveBeenCalled();
   });
@@ -709,7 +690,7 @@ describe('EditorComponent', () => {
 
   it('onCanvasPointerCancel clears drag/resize/rotate state', () => {
     fakeDrag('x');
-    cmp.onCanvasPointerCancel();
+    cmp.cancelInteractions();
     expect(drr.drag).toBeNull();
   });
 

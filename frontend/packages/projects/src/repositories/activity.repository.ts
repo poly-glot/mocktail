@@ -72,32 +72,4 @@ export class ActivityRepository {
       onChange(rows);
     });
   }
-
-  public subscribeActivity(
-    tid: string,
-    pid: string,
-    max: number,
-    onChange: (rows: IActivity[]) => void,
-  ): () => void {
-    const q = query(
-      collection(this._firebase.db, 'tenants', tid, 'projects', pid, 'activity'),
-      orderBy('createdAt', 'desc'),
-      fsLimit(max),
-    );
-    return onSnapshot(q, (snap) => {
-      const rows: IActivity[] = snap.docs.map((d) => {
-        const data = d.data() as Record<string, unknown>;
-        return {
-          id: d.id,
-          type: data['type'] as ActivityType,
-          actorId: (data['actorId'] as string) ?? '',
-          actorName: (data['actorName'] as string) ?? 'Someone',
-          projectId: (data['projectId'] as string) ?? pid,
-          summary: (data['summary'] as string) ?? '',
-          createdAt: data['createdAt'],
-        };
-      });
-      onChange(rows);
-    });
-  }
 }

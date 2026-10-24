@@ -184,15 +184,4 @@ describe('PaletteComponent', () => {
     expect(cmp.searchValue()).toBe('text');
     spy();
   });
-
-  it('honors custom categories input', () => {
-    const custom: IPalette[] = [
-      { label: 'One', items: [{ type: 'rect', label: 'R', w: 10, h: 10, icon: 'square' }] },
-    ];
-    fixture.componentRef.setInput('categories', custom);
-    fixture.detectChanges();
-    const cats = fixture.nativeElement.querySelectorAll('.cat');
-    expect(cats.length).toBe(1);
-    expect(cmp.totalCount()).toBe(1);
-  });
 });

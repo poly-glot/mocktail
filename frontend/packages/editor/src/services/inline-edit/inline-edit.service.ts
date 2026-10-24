@@ -38,13 +38,7 @@ export class EditorInlineEditService {
     }, 0);
   }
 
-  public commit(
-    host: HTMLElement,
-    el: IWireElement,
-    cancel: boolean,
-    tid: string,
-    pid: string,
-  ): void {
+  public commit(host: HTMLElement, el: IWireElement, cancel: boolean): void {
     if (!this.isEditing(el.id)) return;
     const raw = cancel ? (el.text ?? '') : (host.innerText ?? '').replace(/\r\n/g, '\n');
     const text = sanitizeInlineText(raw);
@@ -54,7 +48,7 @@ export class EditorInlineEditService {
       // directly when the user bailed out mid-edit.
       host.innerText = el.text ?? this._factory.defaultTextFor(el.type) ?? '';
     } else if (text !== (el.text ?? '')) {
-      void this._elsState.patch(tid, pid, el.id, { text });
+      this._elsState.patch(el.id, { text });
     }
   }
 }

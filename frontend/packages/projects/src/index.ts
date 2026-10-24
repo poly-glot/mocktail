@@ -1,11 +1,9 @@
-export { ProjectApiService } from './services/project-api/project-api.service';
 export { ProjectsRepository } from './repositories/projects.repository';
 export { PagesRepository } from './repositories/pages.repository';
 export { ElementsRepository } from './repositories/elements.repository';
 export { CommentsRepository } from './repositories/comments.repository';
 export { ActivityRepository } from './repositories/activity.repository';
-export { GridConfigRepository } from './repositories/grid-config.repository';
-export { decodeElement, stripUndefined } from './repositories/element-codec';
+export { decodeElement, stripUndefined, toWirePatch } from './repositories/element-codec';
 export { firestoreSignal } from './repositories/firestore-signal';
 export { AiService } from './services/ai/ai.service';
 export { DashboardComponent } from './components/dashboard/dashboard.component';
@@ -19,8 +17,9 @@ export type {
   IGridConfig,
   ActivityType,
   ElementType,
+  HeadingLevel,
 } from './interfaces/project.interface';
-export type { IAiGenerated, IAiReviewIssue } from './services/ai/ai.service';
+export type { IAiGenerated } from './services/ai/ai.service';
 export {
   BORDER_STYLES,
   borderStyleOf,

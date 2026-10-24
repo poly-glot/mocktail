@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CollabService } from '@mocktail/collab';
-import { AiService, IWireElement, ProjectApiService } from '@mocktail/projects';
+import { AiService, IWireElement, ActivityRepository } from '@mocktail/projects';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 import { EditorAiOrchestratorService } from './ai-orchestrator.service';
 
@@ -46,8 +46,8 @@ describe('EditorAiOrchestratorService', () => {
           useValue: { generate: aiGenerate } as Partial<AiService>,
         },
         {
-          provide: ProjectApiService,
-          useValue: { writeActivity } as Partial<ProjectApiService>,
+          provide: ActivityRepository,
+          useValue: { writeActivity } as Partial<ActivityRepository>,
         },
         {
           provide: CollabService,

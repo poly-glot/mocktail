@@ -278,16 +278,9 @@ pub const Server = struct {
                         nowNs() - g_last_activity_ns.load(.acquire),
                         std.time.ns_per_s,
                     );
-                    var pending_fields: usize = 0;
-                    var i: usize = 0;
-                    while (i < self.manager.room_count) : (i += 1) {
-                        if (self.manager.rooms[i].pending) |p| {
-                            pending_fields += p.pendingFieldCount();
-                        }
-                    }
                     std.debug.print(
                         "event=self_kill_initiated reason=idle_keepalive idle_s={d} rooms={d} pending_fields={d}\n",
-                        .{ idle_s, self.manager.room_count, pending_fields },
+                        .{ idle_s, self.manager.room_count, self.totalPendingFields() },
                     );
                 }
                 g_shutdown_requested.store(true, .release);
@@ -326,6 +319,15 @@ pub const Server = struct {
             self.sweepTimeouts();
             self.maybeFlushRooms();
         }
+    }
+
+    fn totalPendingFields(self: *const Server) usize {
+        var total: usize = 0;
+        var i: usize = 0;
+        while (i < self.manager.room_count) : (i += 1) {
+            if (self.manager.rooms[i].pending) |p| total += p.pendingFieldCount();
+        }
+        return total;
     }
 
     /// Walk every room with pending edits; commit those whose triggers have
@@ -431,16 +433,9 @@ pub const Server = struct {
             linux.exit_group(0);
         }
         if (g_kill_reason == .sigterm) {
-            var pending_fields: usize = 0;
-            var k: usize = 0;
-            while (k < self.manager.room_count) : (k += 1) {
-                if (self.manager.rooms[k].pending) |p| {
-                    pending_fields += p.pendingFieldCount();
-                }
-            }
             std.debug.print(
                 "event=self_kill_initiated reason=sigterm rooms={d} pending_fields={d}\n",
-                .{ self.manager.room_count, pending_fields },
+                .{ self.manager.room_count, self.totalPendingFields() },
             );
         }
         const started = nowNs();
@@ -544,17 +539,13 @@ pub const Server = struct {
         // before ripping the connection down so their presence lists update.
         if (conn.phase == .ws_collab or conn.phase == .closing) {
             if (self.manager.roomForSlot(slot)) |room| {
-                if (room.findSlot(slot)) |m| {
-                    var buf: [256]u8 = undefined;
-                    const uid = m.userId();
-                    const msg = std.fmt.bufPrint(&buf, "{{\"type\":\"leave\",\"userId\":\"{s}\"}}", .{
-                        uid,
-                    }) catch null;
-                    _ = self.manager.leave(slot);
-                    if (msg) |text| self.broadcastToRoom(slot, room, text);
-                } else {
-                    _ = self.manager.leave(slot);
-                }
+                var buf: [256]u8 = undefined;
+                const leave_msg: ?[]const u8 = if (room.findSlot(slot)) |m|
+                    std.fmt.bufPrint(&buf, "{{\"type\":\"leave\",\"userId\":\"{s}\"}}", .{m.userId()}) catch null
+                else
+                    null;
+                _ = self.manager.leave(slot);
+                if (leave_msg) |text| self.broadcastToRoom(slot, room, text);
             }
         }
         if (conn.fd >= 0) {
@@ -581,13 +572,13 @@ pub const Server = struct {
         // Anything else is treated as an opaque broadcast payload (cursor,
         // selection, edit). We fan the raw bytes out to all other peers so
         // the frontend owns the schema.
-        if (isHeartbeatMessage(payload)) {
+        if (hasType(payload, "heartbeat")) {
             // Activity is updated unconditionally in processFrames for
             // .ws_collab connections (Task 4); nothing to do here. Heartbeats
             // are strictly client→server; we do not broadcast them to peers.
             return;
         }
-        if (isHelloMessage(payload)) {
+        if (hasType(payload, "hello")) {
             const room = self.manager.roomForSlot(slot) orelse return;
             const member = room.findSlot(slot) orelse return;
             const uid = extractJsonString(payload, "userId") orelse "anon";
@@ -608,11 +599,11 @@ pub const Server = struct {
         // writes. Rooms with an empty tenant (pre-migration clients) skip
         // the merge — they stay broadcast-only, matching pre-Phase-1 behavior.
         if (self.fs_client != null and room.tenant_id_len > 0) {
-            if (isEditMessage(payload)) {
+            if (hasType(payload, "edit")) {
                 self.ingestEdit(room, payload);
-            } else if (isDeleteMessage(payload)) {
+            } else if (hasType(payload, "delete")) {
                 self.ingestDelete(room, payload);
-            } else if (isDeleteFieldsMessage(payload)) {
+            } else if (hasType(payload, "deleteFields")) {
                 self.ingestDeleteFields(room, payload);
             }
         }
@@ -717,20 +708,15 @@ pub const Server = struct {
     }
 
     fn ensureEvents(self: *Server, slot: u32, extra: u32) void {
-        const conn = &self.conns[slot];
-        const desired = conn.registered_events | extra;
-        if (desired == conn.registered_events) return;
-        conn.registered_events = desired;
-        var ev: linux.epoll_event = .{
-            .events = desired,
-            .data = .{ .u64 = packToken(slot, conn.generation) },
-        };
-        _ = posix.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, conn.fd, &ev) catch {};
+        self.setEvents(slot, self.conns[slot].registered_events | extra);
     }
 
     fn dropEvents(self: *Server, slot: u32, remove: u32) void {
+        self.setEvents(slot, self.conns[slot].registered_events & ~remove);
+    }
+
+    fn setEvents(self: *Server, slot: u32, desired: u32) void {
         const conn = &self.conns[slot];
-        const desired = conn.registered_events & ~remove;
         if (desired == conn.registered_events) return;
         conn.registered_events = desired;
         var ev: linux.epoll_event = .{
@@ -934,13 +920,7 @@ pub const Server = struct {
 
     fn writeHealthzJson(self: *Server, slot: u32) void {
         const now = nowNs();
-        var pending_fields: usize = 0;
-        var k: usize = 0;
-        while (k < self.manager.room_count) : (k += 1) {
-            if (self.manager.rooms[k].pending) |p| {
-                pending_fields += p.pendingFieldCount();
-            }
-        }
+        const pending_fields = self.totalPendingFields();
         const idle_s = @divTrunc(
             now - g_last_activity_ns.load(.acquire),
             std.time.ns_per_s,
@@ -1232,37 +1212,16 @@ fn containsTokenCaseInsensitive(value: []const u8, needle: []const u8) bool {
     return false;
 }
 
-fn isHelloMessage(payload: []const u8) bool {
-    // Fast heuristic: look for a "type":"hello" substring after trimming.
-    return std.mem.indexOf(u8, payload, "\"type\":\"hello\"") != null or
-        std.mem.indexOf(u8, payload, "\"type\": \"hello\"") != null;
+/// Substring match for `"type":"<name>"` (with or without a space after the
+/// colon). Cheap pre-filter before any JSON walking on the hot path.
+fn hasType(payload: []const u8, comptime name: []const u8) bool {
+    return std.mem.indexOf(u8, payload, "\"type\":\"" ++ name ++ "\"") != null or
+        std.mem.indexOf(u8, payload, "\"type\": \"" ++ name ++ "\"") != null;
 }
 
-fn isEditMessage(payload: []const u8) bool {
-    return std.mem.indexOf(u8, payload, "\"type\":\"edit\"") != null or
-        std.mem.indexOf(u8, payload, "\"type\": \"edit\"") != null;
-}
-
-fn isDeleteMessage(payload: []const u8) bool {
-    return std.mem.indexOf(u8, payload, "\"type\":\"delete\"") != null or
-        std.mem.indexOf(u8, payload, "\"type\": \"delete\"") != null;
-}
-
-fn isDeleteFieldsMessage(payload: []const u8) bool {
-    return std.mem.indexOf(u8, payload, "\"type\":\"deleteFields\"") != null or
-        std.mem.indexOf(u8, payload, "\"type\": \"deleteFields\"") != null;
-}
-
-fn isHeartbeatMessage(payload: []const u8) bool {
-    return std.mem.indexOf(u8, payload, "\"type\":\"heartbeat\"") != null or
-        std.mem.indexOf(u8, payload, "\"type\": \"heartbeat\"") != null;
-}
-
-/// Extract a JSON object value (including braces) for the named key. Walks
-/// balanced braces with basic string-literal awareness. Returns null for
-/// missing keys or malformed input — good enough for our trusted client
-/// without pulling in a full JSON parser on the hot path.
-fn extractJsonObject(payload: []const u8, key: []const u8) ?[]const u8 {
+/// Index of the first byte of the value for `"key"`, skipping the colon and
+/// spaces. Null when the key is absent or the needle would not fit.
+fn seekValue(payload: []const u8, key: []const u8) ?usize {
     var needle_buf: [64]u8 = undefined;
     if (key.len + 2 > needle_buf.len) return null;
     needle_buf[0] = '"';
@@ -1272,7 +1231,17 @@ fn extractJsonObject(payload: []const u8, key: []const u8) ?[]const u8 {
     const start = std.mem.indexOf(u8, payload, needle) orelse return null;
     var i: usize = start + needle.len;
     while (i < payload.len and (payload[i] == ' ' or payload[i] == ':')) i += 1;
-    if (i >= payload.len or payload[i] != '{') return null;
+    if (i >= payload.len) return null;
+    return i;
+}
+
+/// Extract a JSON object value (including braces) for the named key. Walks
+/// balanced braces with basic string-literal awareness. Returns null for
+/// missing keys or malformed input — good enough for our trusted client
+/// without pulling in a full JSON parser on the hot path.
+fn extractJsonObject(payload: []const u8, key: []const u8) ?[]const u8 {
+    var i = seekValue(payload, key) orelse return null;
+    if (payload[i] != '{') return null;
     const obj_start = i;
     var depth: i32 = 0;
     var in_str = false;
@@ -1306,16 +1275,8 @@ fn extractJsonObject(payload: []const u8, key: []const u8) ?[]const u8 {
 /// Tolerant of whitespace and tightly scoped — same hot-path tradeoff as
 /// extractJsonObject above.
 fn extractJsonStringArray(payload: []const u8, key: []const u8, out: [][]const u8) usize {
-    var needle_buf: [64]u8 = undefined;
-    if (key.len + 2 > needle_buf.len) return 0;
-    needle_buf[0] = '"';
-    @memcpy(needle_buf[1..][0..key.len], key);
-    needle_buf[1 + key.len] = '"';
-    const needle = needle_buf[0 .. key.len + 2];
-    const start = std.mem.indexOf(u8, payload, needle) orelse return 0;
-    var i: usize = start + needle.len;
-    while (i < payload.len and (payload[i] == ' ' or payload[i] == ':')) i += 1;
-    if (i >= payload.len or payload[i] != '[') return 0;
+    var i = seekValue(payload, key) orelse return 0;
+    if (payload[i] != '[') return 0;
     i += 1;
 
     var count: usize = 0;
@@ -1337,18 +1298,8 @@ fn extractJsonStringArray(payload: []const u8, key: []const u8, out: [][]const u
 }
 
 fn extractJsonString(payload: []const u8, key: []const u8) ?[]const u8 {
-    // Tiny unquoted-key scan: `"key":"value"` with optional whitespace. Not a
-    // real JSON parser — MVP client-owned format — but tolerant of reorders.
-    var needle_buf: [64]u8 = undefined;
-    if (key.len + 2 > needle_buf.len) return null;
-    needle_buf[0] = '"';
-    @memcpy(needle_buf[1..][0..key.len], key);
-    needle_buf[1 + key.len] = '"';
-    const needle = needle_buf[0 .. key.len + 2];
-    const start = std.mem.indexOf(u8, payload, needle) orelse return null;
-    var i: usize = start + needle.len;
-    while (i < payload.len and (payload[i] == ' ' or payload[i] == ':')) i += 1;
-    if (i >= payload.len or payload[i] != '"') return null;
+    var i = seekValue(payload, key) orelse return null;
+    if (payload[i] != '"') return null;
     i += 1;
     const value_start = i;
     while (i < payload.len and payload[i] != '"') : (i += 1) {
@@ -1544,10 +1495,15 @@ test "token pack/unpack round-trips" {
     try std.testing.expectEqual(@as(u32, 0xABCDEF01), tokenGen(t));
 }
 
-test "isHelloMessage matches both spacings" {
-    try std.testing.expect(isHelloMessage("{\"type\":\"hello\",\"name\":\"x\"}"));
-    try std.testing.expect(isHelloMessage("{\"type\": \"hello\" }"));
-    try std.testing.expect(!isHelloMessage("{\"type\":\"cursor\"}"));
+test "hasType matches both spacings and does not match prefixes" {
+    try std.testing.expect(hasType("{\"type\":\"hello\",\"name\":\"x\"}", "hello"));
+    try std.testing.expect(hasType("{\"type\": \"hello\" }", "hello"));
+    try std.testing.expect(!hasType("{\"type\":\"cursor\"}", "hello"));
+    try std.testing.expect(hasType("{\"type\":\"delete\",\"elementId\":\"e1\"}", "delete"));
+    try std.testing.expect(!hasType("{\"type\":\"deleteFields\"}", "delete"));
+    try std.testing.expect(hasType("{\"type\":\"deleteFields\",\"fields\":[\"color\"]}", "deleteFields"));
+    try std.testing.expect(hasType("{\"type\":\"heartbeat\"}", "heartbeat"));
+    try std.testing.expect(hasType("{\"type\": \"edit\" , \"x\":1}", "edit"));
 }
 
 test "extractJsonString returns the matched value" {
@@ -1555,27 +1511,6 @@ test "extractJsonString returns the matched value" {
     try std.testing.expectEqualStrings("u-42", extractJsonString(s, "userId").?);
     try std.testing.expectEqualStrings("Alice", extractJsonString(s, "name").?);
     try std.testing.expect(extractJsonString(s, "missing") == null);
-}
-
-test "isDeleteMessage detects delete frames" {
-    try std.testing.expect(isDeleteMessage("{\"type\":\"delete\",\"elementId\":\"e1\"}"));
-    try std.testing.expect(isDeleteMessage("{\"type\": \"delete\" , \"elementId\":\"e1\"}"));
-    try std.testing.expect(!isDeleteMessage("{\"type\":\"deleteFields\"}"));
-    try std.testing.expect(!isDeleteMessage("{\"type\":\"edit\"}"));
-}
-
-test "isHeartbeatMessage detects heartbeat frames" {
-    try std.testing.expect(isHeartbeatMessage("{\"type\":\"heartbeat\"}"));
-    try std.testing.expect(isHeartbeatMessage("{\"type\": \"heartbeat\" }"));
-    try std.testing.expect(!isHeartbeatMessage("{\"type\":\"hello\"}"));
-    try std.testing.expect(!isHeartbeatMessage("{\"type\":\"edit\"}"));
-}
-
-test "isDeleteFieldsMessage detects deleteFields frames" {
-    try std.testing.expect(isDeleteFieldsMessage(
-        "{\"type\":\"deleteFields\",\"elementId\":\"e1\",\"fields\":[\"color\"]}",
-    ));
-    try std.testing.expect(!isDeleteFieldsMessage("{\"type\":\"delete\"}"));
 }
 
 test "extractJsonStringArray returns array elements" {
@@ -1607,12 +1542,6 @@ test "extractJsonStringArray returns 0 for missing or non-array" {
         "fields",
         &buf,
     ));
-}
-
-test "isEditMessage detects edit frames" {
-    try std.testing.expect(isEditMessage("{\"type\":\"edit\",\"elementId\":\"e1\"}"));
-    try std.testing.expect(isEditMessage("{\"type\": \"edit\" , \"x\":1}"));
-    try std.testing.expect(!isEditMessage("{\"type\":\"cursor\"}"));
 }
 
 test "extractJsonObject returns balanced braces respecting strings" {

@@ -28,7 +28,6 @@ const log = std.log.scoped(.grpc);
 pub const GrpcError = error{
     ChannelCreateFailed,
     CredentialsCreateFailed,
-    CqCreateFailed,
     CallCreateFailed,
     BatchFailed,
     CallError,
@@ -56,14 +55,6 @@ pub const GrpcChannel = struct {
     channel: *c.grpc_channel,
     use_tls: bool,
     mutex: std.Thread.Mutex = .{},
-
-    pub fn createCq() GrpcError!*c.grpc_completion_queue {
-        return c.grpc_completion_queue_create_for_next(null) orelse return error.CqCreateFailed;
-    }
-
-    pub fn destroyCq(cq: *c.grpc_completion_queue) void {
-        c.grpc_completion_queue_destroy(cq);
-    }
 
     pub fn init(host: [:0]const u8, use_tls: bool) GrpcError!GrpcChannel {
         c.grpc_init();

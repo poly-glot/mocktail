@@ -1,23 +1,27 @@
 import { TestBed } from '@angular/core/testing';
-import { ProjectApiService } from '@mocktail/projects';
+import { ActivityRepository, CommentsRepository } from '@mocktail/projects';
 import { EditorCommentsService } from './comments.service';
 
 describe('EditorCommentsService', () => {
   let svc: EditorCommentsService;
-  let projects: jasmine.SpyObj<ProjectApiService>;
+  let comments: jasmine.SpyObj<CommentsRepository>;
+  let activity: jasmine.SpyObj<ActivityRepository>;
 
   beforeEach(() => {
-    projects = jasmine.createSpyObj<ProjectApiService>('ProjectApiService', [
+    comments = jasmine.createSpyObj<CommentsRepository>('CommentsRepository', [
       'addComment',
       'resolveComment',
-      'writeActivity',
     ]);
-    projects.addComment.and.resolveTo('new-cid');
-    projects.resolveComment.and.resolveTo();
-    projects.writeActivity.and.resolveTo();
+    activity = jasmine.createSpyObj<ActivityRepository>('ActivityRepository', ['writeActivity']);
+    comments.addComment.and.resolveTo('new-cid');
+    comments.resolveComment.and.resolveTo();
+    activity.writeActivity.and.resolveTo();
 
     TestBed.configureTestingModule({
-      providers: [{ provide: ProjectApiService, useValue: projects }],
+      providers: [
+        { provide: CommentsRepository, useValue: comments },
+        { provide: ActivityRepository, useValue: activity },
+      ],
     });
     svc = TestBed.inject(EditorCommentsService);
   });
@@ -90,26 +94,26 @@ describe('EditorCommentsService', () => {
       svc.startDraft(5, 6);
       svc.updateDraftText('   ');
       await svc.saveDraft('t', 'p', null);
-      expect(projects.addComment).not.toHaveBeenCalled();
+      expect(comments.addComment).not.toHaveBeenCalled();
       expect(svc.draft()).toBeNull();
     });
 
     it('is a no-op when no draft exists', async () => {
       await svc.saveDraft('t', 'p', null);
-      expect(projects.addComment).not.toHaveBeenCalled();
+      expect(comments.addComment).not.toHaveBeenCalled();
     });
 
     it('persists trimmed text, writes activity, opens the new pin, clears the draft', async () => {
       svc.startDraft(10, 20);
       svc.updateDraftText('  hello world  ');
       await svc.saveDraft('t1', 'p1', 'pg1');
-      expect(projects.addComment).toHaveBeenCalledWith('t1', 'p1', {
+      expect(comments.addComment).toHaveBeenCalledWith('t1', 'p1', {
         text: 'hello world',
         x: 10,
         y: 20,
         pageId: 'pg1',
       });
-      expect(projects.writeActivity).toHaveBeenCalledWith(
+      expect(activity.writeActivity).toHaveBeenCalledWith(
         't1',
         'p1',
         'comment-added',
@@ -123,7 +127,7 @@ describe('EditorCommentsService', () => {
       svc.startDraft(0, 0);
       svc.updateDraftText('hi');
       await svc.saveDraft('t', 'p', null);
-      expect(projects.addComment).toHaveBeenCalledWith('t', 'p', {
+      expect(comments.addComment).toHaveBeenCalledWith('t', 'p', {
         text: 'hi',
         x: 0,
         y: 0,
@@ -136,8 +140,8 @@ describe('EditorCommentsService', () => {
     it('resolves the comment, writes activity, and closes any open pin', async () => {
       svc.openPin('c1');
       await svc.resolveComment('t', 'p', 'c1');
-      expect(projects.resolveComment).toHaveBeenCalledWith('t', 'p', 'c1', true);
-      expect(projects.writeActivity).toHaveBeenCalledWith(
+      expect(comments.resolveComment).toHaveBeenCalledWith('t', 'p', 'c1', true);
+      expect(activity.writeActivity).toHaveBeenCalledWith(
         't',
         'p',
         'comment-resolved',

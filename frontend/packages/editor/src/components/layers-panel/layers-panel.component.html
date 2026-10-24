@@ -43,9 +43,9 @@
           <lucide-icon name="grip-vertical" class="i-12 i--block"></lucide-icon>
         </span>
         <span class="layer-icon">
-          <lucide-icon [name]="iconFor(l.type)" class="i-14 i--block"></lucide-icon>
+          <lucide-icon [name]="iconForType(l.type)" class="i-14 i--block"></lucide-icon>
         </span>
-        <span class="layer-label">{{ labelFor(l) }}</span>
+        <span class="layer-label">{{ labelForElement(l) }}</span>
         <button
           type="button"
           class="layer-lock"

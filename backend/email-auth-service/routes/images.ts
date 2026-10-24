@@ -15,14 +15,12 @@
  */
 
 import { Hono } from "hono";
+import { createRateLimiter } from "../services/rate-limit.ts";
 
 const images = new Hono();
 
 const UNSPLASH_API = "https://api.unsplash.com";
-const WINDOW_MS = 60_000;
-const LIMIT_PER_WINDOW = 30;
-
-const hits = new Map<string, number[]>();
+const retryAfterFor = createRateLimiter(30, 60_000);
 
 function keyFor(
   c: { req: { header: (k: string) => string | undefined } },
@@ -30,24 +28,6 @@ function keyFor(
   const fwd = c.req.header("x-forwarded-for");
   if (fwd) return fwd.split(",")[0].trim();
   return c.req.header("x-real-ip") ?? "anon";
-}
-
-function rateLimit(key: string): { ok: boolean; retryAfter: number } {
-  const now = Date.now();
-  const arr = hits.get(key) ?? [];
-  const pruned = arr.filter((t) => now - t < WINDOW_MS);
-  if (pruned.length >= LIMIT_PER_WINDOW) {
-    const oldest = pruned[0];
-    const retryAfter = Math.max(
-      1,
-      Math.ceil((WINDOW_MS - (now - oldest)) / 1000),
-    );
-    hits.set(key, pruned);
-    return { ok: false, retryAfter };
-  }
-  pruned.push(now);
-  hits.set(key, pruned);
-  return { ok: true, retryAfter: 0 };
 }
 
 function accessKey(): string | null {
@@ -106,9 +86,9 @@ images.get("/search", async (c) => {
   const key = accessKey();
   if (!key) return c.json({ error: "UNSPLASH_ACCESS_KEY not configured" }, 500);
 
-  const rl = rateLimit(keyFor(c));
-  if (!rl.ok) {
-    c.header("Retry-After", String(rl.retryAfter));
+  const retryAfter = retryAfterFor(keyFor(c));
+  if (retryAfter > 0) {
+    c.header("Retry-After", String(retryAfter));
     return c.json({ error: "rate limit exceeded" }, 429);
   }
 

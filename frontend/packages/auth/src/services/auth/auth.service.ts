@@ -13,10 +13,6 @@ import {
 
 const EMAIL_LINK_KEY = 'mocktail:emailForSignIn';
 
-interface SendLinkError extends Error {
-  retryAfter?: number;
-}
-
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   public readonly user = signal<User | null>(null);
@@ -72,11 +68,7 @@ export class AuthService {
       body: JSON.stringify({ email }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const err: SendLinkError = new Error(data.error ?? 'Failed to send sign-in link');
-      err.retryAfter = data.retryAfter;
-      throw err;
-    }
+    if (!res.ok) throw new Error(data.error ?? 'Failed to send sign-in link');
     window.localStorage.setItem(EMAIL_LINK_KEY, email);
     this.emailLinkError.set(null);
   }

@@ -5,7 +5,7 @@
   [mkEditorShortcuts]="shortcutsApi"
   (pointermove)="onCanvasPointerMove($event)"
   (pointerup)="onCanvasPointerUp()"
-  (pointercancel)="onCanvasPointerCancel()"
+  (pointercancel)="cancelInteractions()"
 >
   <div class="frame-main">
     <!-- Rail -->
@@ -135,7 +135,7 @@
           }}</span>
         </div>
         <div class="avatars" [attr.data-count]="peerCount()">
-          @for (p of peers(); track trackPeer($index, p)) {
+          @for (p of peers(); track p.userId) {
             <span
               class="peer"
               [style.background]="p.color"
@@ -179,7 +179,7 @@
               [pageWidth]="activePage()?.width ?? 1200"
             ></mt-grid-overlay>
 
-            @for (e of elements(); track trackEl($index, e)) {
+            @for (e of elements(); track e.id) {
               <div
                 class="el"
                 [class.is-rect]="e.type === 'rect'"
@@ -358,7 +358,7 @@
             }
 
             <!-- Remote cursors -->
-            @for (c of cursorsList(); track trackCursor($index, c)) {
+            @for (c of peers(); track c.userId) {
               <div
                 class="remote-cursor"
                 [style.transform]="'translate(' + c.x + 'px,' + c.y + 'px)'"

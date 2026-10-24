@@ -82,7 +82,7 @@ describe('EditorElementsStateService', () => {
   describe('patch', () => {
     it('merges a partial into the stored element and routes via collab', async () => {
       svc.list.set([el('a', { x: 10 }), el('b')]);
-      await svc.patch('t1', 'p1', 'a', { x: 42 });
+      await svc.patch('a', { x: 42 });
       expect(svc.getById('a')?.x).toBe(42);
       expect(sendEditSpy).toHaveBeenCalledTimes(1);
       const [id, patch] = sendEditSpy.calls.mostRecent().args;
@@ -93,7 +93,7 @@ describe('EditorElementsStateService', () => {
 
     it('is a no-op when the id does not exist', async () => {
       svc.list.set([el('a')]);
-      await svc.patch('t1', 'p1', 'missing', { x: 99 });
+      await svc.patch('missing', { x: 99 });
       expect(sendEditSpy).not.toHaveBeenCalled();
       expect(flushSpy).not.toHaveBeenCalled();
       expect(svc.list().length).toBe(1);
@@ -102,7 +102,7 @@ describe('EditorElementsStateService', () => {
 
     it('does not mutate other elements', async () => {
       svc.list.set([el('a', { x: 1 }), el('b', { x: 2 })]);
-      await svc.patch('t', 'p', 'a', { x: 99 });
+      await svc.patch('a', { x: 99 });
       expect(svc.getById('b')?.x).toBe(2);
     });
   });

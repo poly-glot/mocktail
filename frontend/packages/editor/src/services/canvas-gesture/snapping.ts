@@ -25,6 +25,61 @@ export interface IMoveResult {
 
 export const GUIDE_THRESHOLD = 4;
 
+interface IVerticalTarget {
+  readonly v: number;
+  readonly src: { y0: number; y1: number };
+}
+
+interface IHorizontalTarget {
+  readonly v: number;
+  readonly src: { x0: number; x1: number };
+}
+
+function collectSnapTargets(
+  ctx: ISnapContext,
+  selfId: string,
+): { vTargets: IVerticalTarget[]; hTargets: IHorizontalTarget[] } {
+  const vTargets: IVerticalTarget[] = [];
+  const hTargets: IHorizontalTarget[] = [];
+  const fullHeight = { y0: 0, y1: ctx.pageH };
+  const fullWidth = { x0: 0, x1: ctx.pageW };
+
+  for (const s of ctx.elements) {
+    if (s.id === selfId || s.rotation) continue;
+    const ySpan = { y0: s.y, y1: s.y + s.h };
+    const xSpan = { x0: s.x, x1: s.x + s.w };
+    vTargets.push(
+      { v: s.x, src: ySpan },
+      { v: s.x + s.w / 2, src: ySpan },
+      { v: s.x + s.w, src: ySpan },
+    );
+    hTargets.push(
+      { v: s.y, src: xSpan },
+      { v: s.y + s.h / 2, src: xSpan },
+      { v: s.y + s.h, src: xSpan },
+    );
+  }
+
+  vTargets.push(
+    { v: 0, src: fullHeight },
+    { v: ctx.pageW / 2, src: fullHeight },
+    { v: ctx.pageW, src: fullHeight },
+  );
+  hTargets.push(
+    { v: 0, src: fullWidth },
+    { v: ctx.pageH / 2, src: fullWidth },
+    { v: ctx.pageH, src: fullWidth },
+  );
+
+  if (ctx.snapEnabled) {
+    for (const col of ctx.gridColumns) {
+      vTargets.push({ v: col.left, src: fullHeight }, { v: col.left + col.width, src: fullHeight });
+    }
+  }
+
+  return { vTargets, hTargets };
+}
+
 export function snapToGuides(
   rawX: number,
   rawY: number,
@@ -33,32 +88,7 @@ export function snapToGuides(
   selfId: string,
   ctx: ISnapContext,
 ): { x: number; y: number; guides: IGuideLine[] } {
-  const siblings = ctx.elements.filter((e) => e.id !== selfId && !e.rotation);
-  const vTargets: { v: number; src: { y0: number; y1: number } }[] = [];
-  const hTargets: { v: number; src: { x0: number; x1: number } }[] = [];
-  for (const s of siblings) {
-    const bx = { y0: s.y, y1: s.y + s.h };
-    vTargets.push({ v: s.x, src: bx });
-    vTargets.push({ v: s.x + s.w / 2, src: bx });
-    vTargets.push({ v: s.x + s.w, src: bx });
-    const by = { x0: s.x, x1: s.x + s.w };
-    hTargets.push({ v: s.y, src: by });
-    hTargets.push({ v: s.y + s.h / 2, src: by });
-    hTargets.push({ v: s.y + s.h, src: by });
-  }
-  vTargets.push({ v: 0, src: { y0: 0, y1: ctx.pageH } });
-  vTargets.push({ v: ctx.pageW / 2, src: { y0: 0, y1: ctx.pageH } });
-  vTargets.push({ v: ctx.pageW, src: { y0: 0, y1: ctx.pageH } });
-  hTargets.push({ v: 0, src: { x0: 0, x1: ctx.pageW } });
-  hTargets.push({ v: ctx.pageH / 2, src: { x0: 0, x1: ctx.pageW } });
-  hTargets.push({ v: ctx.pageH, src: { x0: 0, x1: ctx.pageW } });
-
-  if (ctx.snapEnabled) {
-    for (const col of ctx.gridColumns) {
-      vTargets.push({ v: col.left, src: { y0: 0, y1: ctx.pageH } });
-      vTargets.push({ v: col.left + col.width, src: { y0: 0, y1: ctx.pageH } });
-    }
-  }
+  const { vTargets, hTargets } = collectSnapTargets(ctx, selfId);
 
   const candidatesX = [{ offset: 0 }, { offset: w / 2 }, { offset: w }];
   const candidatesY = [{ offset: 0 }, { offset: h / 2 }, { offset: h }];
@@ -119,31 +149,7 @@ export function snapResizeEdges(
   selfId: string,
   ctx: ISnapContext,
 ): { x: number; y: number; w: number; h: number; guides: IGuideLine[] } {
-  const siblings = ctx.elements.filter((e) => e.id !== selfId && !e.rotation);
-  const vTargets: { v: number; src: { y0: number; y1: number } }[] = [];
-  const hTargets: { v: number; src: { x0: number; x1: number } }[] = [];
-  for (const s of siblings) {
-    const by = { y0: s.y, y1: s.y + s.h };
-    vTargets.push({ v: s.x, src: by });
-    vTargets.push({ v: s.x + s.w / 2, src: by });
-    vTargets.push({ v: s.x + s.w, src: by });
-    const bx = { x0: s.x, x1: s.x + s.w };
-    hTargets.push({ v: s.y, src: bx });
-    hTargets.push({ v: s.y + s.h / 2, src: bx });
-    hTargets.push({ v: s.y + s.h, src: bx });
-  }
-  vTargets.push({ v: 0, src: { y0: 0, y1: ctx.pageH } });
-  vTargets.push({ v: ctx.pageW / 2, src: { y0: 0, y1: ctx.pageH } });
-  vTargets.push({ v: ctx.pageW, src: { y0: 0, y1: ctx.pageH } });
-  hTargets.push({ v: 0, src: { x0: 0, x1: ctx.pageW } });
-  hTargets.push({ v: ctx.pageH / 2, src: { x0: 0, x1: ctx.pageW } });
-  hTargets.push({ v: ctx.pageH, src: { x0: 0, x1: ctx.pageW } });
-  if (ctx.snapEnabled) {
-    for (const col of ctx.gridColumns) {
-      vTargets.push({ v: col.left, src: { y0: 0, y1: ctx.pageH } });
-      vTargets.push({ v: col.left + col.width, src: { y0: 0, y1: ctx.pageH } });
-    }
-  }
+  const { vTargets, hTargets } = collectSnapTargets(ctx, selfId);
 
   let { x, y, w, h } = rect;
   const guides: IGuideLine[] = [];
