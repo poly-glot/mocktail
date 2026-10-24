@@ -1,32 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal, output } from '@angular/core';
 import { ElementType, IWireElement } from '@mocktail/projects';
 import {
-  BarChart3,
-  CheckSquare,
   GripVertical,
-  Heading1,
-  Image,
-  LayoutTemplate,
-  Link as LinkIcon,
   Lock,
   LUCIDE_ICONS,
   LucideAngularModule,
   LucideIconProvider,
-  Menu,
-  Minus,
-  MousePointer2,
   PanelLeftClose,
-  PieChart,
-  Smartphone,
-  Square,
-  Table,
-  Tag,
-  TextCursorInput,
-  ToggleRight,
-  Type,
   Unlock,
 } from 'lucide-angular';
-import { PALETTE_ITEM_BY_TYPE } from '../palette/palette.component';
+import { PALETTE_ICONS, PALETTE_ITEM_BY_TYPE } from '../palette/palette.component';
 
 export function iconForType(type: ElementType): string {
   return PALETTE_ITEM_BY_TYPE.get(type)?.icon ?? 'square';
@@ -58,26 +41,10 @@ export interface IReorderEvent {
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        BarChart3,
-        CheckSquare,
+        ...PALETTE_ICONS,
         GripVertical,
-        Heading1,
-        Image,
-        LayoutTemplate,
-        Link: LinkIcon,
         Lock,
-        Menu,
-        Minus,
-        MousePointer2,
         PanelLeftClose,
-        PieChart,
-        Smartphone,
-        Square,
-        Table,
-        Tag,
-        TextCursorInput,
-        ToggleRight,
-        Type,
         Unlock,
       }),
     },
