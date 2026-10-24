@@ -26,17 +26,16 @@ import {
   Type,
   Unlock,
 } from 'lucide-angular';
-import { PALETTES } from '../palette/palette.component';
+import { PALETTE_ITEM_BY_TYPE } from '../palette/palette.component';
 
 export function iconForType(type: ElementType): string {
-  const preset = PALETTES.flatMap((p) => p.items).find((i) => i.type === type);
-  return preset?.icon ?? 'square';
+  return PALETTE_ITEM_BY_TYPE.get(type)?.icon ?? 'square';
 }
 
 export function labelForElement(el: IWireElement): string {
-  if (el.text && el.text.trim()) return el.text.trim();
-  const preset = PALETTES.flatMap((p) => p.items).find((i) => i.type === el.type);
-  return preset?.label ?? el.type;
+  const text = el.text?.trim();
+  if (text) return text;
+  return PALETTE_ITEM_BY_TYPE.get(el.type)?.label ?? el.type;
 }
 
 export function computeDropPosition(clientY: number, rect: DOMRect): 'above' | 'below' {
@@ -102,13 +101,8 @@ export class LayersPanelComponent {
   public readonly lockToggle = output<string>();
   public readonly reorder = output<IReorderEvent>();
 
-  public iconFor(type: ElementType): string {
-    return iconForType(type);
-  }
-
-  public labelFor(el: IWireElement): string {
-    return labelForElement(el);
-  }
+  public readonly iconForType = iconForType;
+  public readonly labelForElement = labelForElement;
 
   public isDropAbove(id: string): boolean {
     const t = this.dropTarget();

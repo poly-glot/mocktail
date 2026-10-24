@@ -2,7 +2,6 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { IImageRef } from '@mocktail/projects';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 import { EditorSelectionService } from '../selection/selection.service';
-import { EditorSessionService } from '../session/session.service';
 import { withUtm } from './unsplash-constants';
 import { IUnsplashPhoto, IUnsplashSearchResponse } from './unsplash-types';
 
@@ -19,7 +18,6 @@ const PER_PAGE = 24;
 export class ImageLibraryService {
   private readonly _elsState = inject(EditorElementsStateService);
   private readonly _selection = inject(EditorSelectionService);
-  private readonly _session = inject(EditorSessionService);
 
   public readonly query = signal<string>('');
   public readonly results = signal<IUnsplashPhoto[]>([]);
@@ -66,9 +64,6 @@ export class ImageLibraryService {
     if (!id) return;
     const el = this._elsState.getById(id);
     if (!el || el.type !== 'image') return;
-    const tid = this._session.tid();
-    const pid = this._session.pid();
-    if (!tid || !pid) return;
 
     const image: IImageRef = {
       src: photo.urls.regular,
@@ -83,7 +78,7 @@ export class ImageLibraryService {
     };
 
     this._pingDownload(photo.links.download_location);
-    await this._elsState.patch(tid, pid, id, { data: { image } });
+    this._elsState.patch(id, { data: { image } });
   }
 
   private _pingDownload(downloadLocation: string): void {

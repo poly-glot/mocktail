@@ -193,16 +193,11 @@ describe('EditorComponent', () => {
 
   // ── Heading level ─────────────────────────────────────────────────
 
-  it('setHeadingLevel ignores NaN and out-of-range values', async () => {
+  it('setHeadingLevel patches the selected heading', () => {
     const heading = makeEl({ id: 'h1', type: 'heading', level: 1 });
     cmp.elements.set([heading]);
     cmp.selectedId.set('h1');
-    await editorSvc.setHeadingLevel('t1', 'p1', 'abc');
-    expect(collab.sendEdit).not.toHaveBeenCalled();
-    await editorSvc.setHeadingLevel('t1', 'p1', '0');
-    await editorSvc.setHeadingLevel('t1', 'p1', '7');
-    expect(collab.sendEdit).not.toHaveBeenCalled();
-    await editorSvc.setHeadingLevel('t1', 'p1', '3');
+    editorSvc.setHeadingLevel(3);
     expect(collab.sendEdit).toHaveBeenCalledWith('h1', { level: 3 });
     const updated = cmp.elements().find((e) => e.id === 'h1')!;
     expect(updated.level).toBe(3);
@@ -249,7 +244,7 @@ describe('EditorComponent', () => {
     const el = makeEl({ id: 't1', type: 'text' });
     cmp.elements.set([el]);
     cmp.selectedId.set('t1');
-    await editorSvc.setColor('t1', 'p1', '  #FF00AA  ');
+    await editorSvc.setColor('  #FF00AA  ');
     expect(collab.sendEdit).toHaveBeenCalledWith('t1', { color: '#ff00aa' });
     const updated = cmp.elements().find((e) => e.id === 't1')!;
     expect(updated.color).toBe('#ff00aa');
@@ -260,10 +255,10 @@ describe('EditorComponent', () => {
     cmp.elements.set([el]);
     cmp.selectedId.set('t1');
     collab.sendEdit.calls.reset();
-    await editorSvc.setColor('t1', 'p1', 'not-a-color');
-    await editorSvc.setColor('t1', 'p1', '#zzz');
-    await editorSvc.setColor('t1', 'p1', '#12345'); // 5 chars — invalid
-    await editorSvc.setColor('t1', 'p1', 'red'); // named color — not hex
+    await editorSvc.setColor('not-a-color');
+    await editorSvc.setColor('#zzz');
+    await editorSvc.setColor('#12345'); // 5 chars — invalid
+    await editorSvc.setColor('red'); // named color — not hex
     expect(collab.sendEdit).not.toHaveBeenCalled();
   });
 
@@ -271,7 +266,7 @@ describe('EditorComponent', () => {
     const el = makeEl({ id: 't1', type: 'text', color: '#123456' });
     cmp.elements.set([el]);
     cmp.selectedId.set('t1');
-    await editorSvc.setColor('t1', 'p1', '');
+    await editorSvc.setColor('');
     expect(collab.sendDeleteFields).toHaveBeenCalledWith('t1', ['color']);
     const after = cmp.elements().find((e) => e.id === 't1');
     expect(after?.color).toBeUndefined();
@@ -281,7 +276,7 @@ describe('EditorComponent', () => {
     const el = makeEl({ id: 't1', type: 'text', color: '#123456' });
     cmp.elements.set([el]);
     cmp.selectedId.set('t1');
-    void editorSvc.clearColor('t1', 'p1');
+    void editorSvc.clearColor();
     const after = cmp.elements().find((e) => e.id === 't1');
     expect(after?.color).toBeUndefined();
     expect(collab.sendDeleteFields).toHaveBeenCalledWith('t1', ['color']);
@@ -521,7 +516,7 @@ describe('EditorComponent', () => {
     const el = makeEl({ id: 's1', type: 'rect', x: 0 });
     cmp.elements.set([el]);
     cmp.selectedId.set('s1');
-    editorSvc.updateSelected('t1', 'p1', { x: 42 } as Patch);
+    editorSvc.updateSelected({ x: 42 } as Patch);
     const updated = cmp.elements().find((e) => e.id === 's1')!;
     expect(updated.x).toBe(42);
     expect(collab.sendEdit).toHaveBeenCalledWith('s1', { x: 42 });
@@ -530,7 +525,7 @@ describe('EditorComponent', () => {
 
   it('updateSelected is a no-op when nothing selected', () => {
     cmp.selectedId.set(null);
-    editorSvc.updateSelected('t1', 'p1', { x: 1 });
+    editorSvc.updateSelected({ x: 1 });
     expect(collab.sendEdit).not.toHaveBeenCalled();
     expect(collab.flushPendingEdits).not.toHaveBeenCalled();
   });

@@ -91,6 +91,10 @@ export const PALETTES: readonly IPalette[] = [
   },
 ];
 
+export const PALETTE_ITEM_BY_TYPE: ReadonlyMap<ElementType, IPaletteItem> = new Map(
+  PALETTES.flatMap((p) => p.items).map((item) => [item.type, item]),
+);
+
 export function filterPalettes(palettes: readonly IPalette[], query: string): IPalette[] {
   const q = query.trim().toLowerCase();
   if (!q) return palettes.map((c) => ({ ...c, items: [...c.items] }));
@@ -146,17 +150,14 @@ export function filterPalettes(palettes: readonly IPalette[], query: string): IP
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaletteComponent {
-  public readonly categories = input<readonly IPalette[]>(PALETTES);
   public readonly collapsed = input<boolean>(false);
 
   public readonly searchValue = signal('');
 
-  public readonly totalCount = computed(() =>
-    this.categories().reduce((sum, p) => sum + p.items.length, 0),
-  );
+  public readonly totalCount = PALETTE_ITEM_BY_TYPE.size;
 
   public readonly filteredCategories = computed<IPalette[]>(() =>
-    filterPalettes(this.categories(), this.searchValue()),
+    filterPalettes(PALETTES, this.searchValue()),
   );
 
   public readonly collapseToggle = output<void>();

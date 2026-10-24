@@ -1,6 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { CollabService } from '@mocktail/collab';
-import { AiService, ElementType, IWireElement, ProjectApiService } from '@mocktail/projects';
+import {
+  AiService,
+  ElementType,
+  IWireElement,
+  ProjectApiService,
+  toWirePatch,
+} from '@mocktail/projects';
 import { EditorElementFactoryService } from '../element-factory/element-factory.service';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 
@@ -69,7 +75,7 @@ export class EditorAiOrchestratorService {
     }
     this._state.list.update((els) => [...els, ...toWrite]);
     for (const el of toWrite) {
-      this._collab.sendEdit(el.id, this._asPatch(el));
+      this._collab.sendEdit(el.id, toWirePatch(el));
     }
     this._collab.flushPendingEdits();
 
@@ -81,13 +87,5 @@ export class EditorAiOrchestratorService {
       `AI generated ${count} elements for "${prompt.slice(0, 40)}"`,
     );
     return { added: count };
-  }
-
-  private _asPatch(el: IWireElement): Record<string, unknown> {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(el)) {
-      if (v !== undefined) out[k] = v;
-    }
-    return out;
   }
 }

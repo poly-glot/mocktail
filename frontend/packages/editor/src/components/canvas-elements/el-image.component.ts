@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { IWireElement, imageRefOf } from '@mocktail/projects';
 import { EditorInspectorService } from '../../services/inspector/inspector.service';
-import { EditorSessionService } from '../../services/session/session.service';
 
 @Component({
   // eslint-disable-next-line @angular-eslint/component-selector
@@ -45,13 +44,10 @@ export class ElImageComponent {
   public readonly el = input.required<IWireElement>();
 
   private readonly _insp = inject(EditorInspectorService);
-  private readonly _session = inject(EditorSessionService);
 
   public imageRefOf = imageRefOf;
 
   public onLoadError(): void {
-    void this._insp
-      .removeImage(this._session.tid(), this._session.pid(), this.el().id)
-      .catch(() => undefined);
+    void this._insp.removeImage(this.el().id).catch(() => undefined);
   }
 }

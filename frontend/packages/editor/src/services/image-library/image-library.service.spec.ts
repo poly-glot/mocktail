@@ -1,16 +1,9 @@
-import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { IWireElement } from '@mocktail/projects';
 import { EditorElementsStateService } from '../elements-state/elements-state.service';
 import { EditorSelectionService } from '../selection/selection.service';
-import { EditorSessionService } from '../session/session.service';
 import { ImageLibraryService } from './image-library.service';
 import { IUnsplashPhoto } from './unsplash-types';
-
-interface IFakeSession {
-  tid: ReturnType<typeof signal<string>>;
-  pid: ReturnType<typeof signal<string>>;
-}
 
 function photo(id: string, overrides: Partial<IUnsplashPhoto> = {}): IUnsplashPhoto {
   return {
@@ -49,7 +42,6 @@ function imageEl(id: string): IWireElement {
 
 describe('ImageLibraryService', () => {
   let svc: ImageLibraryService;
-  let session: IFakeSession;
   let selection: EditorSelectionService;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let elsState: EditorElementsStateService;
@@ -58,7 +50,6 @@ describe('ImageLibraryService', () => {
 
   beforeEach(() => {
     patchSpy = jasmine.createSpy('patch').and.resolveTo(undefined);
-    session = { tid: signal<string>(''), pid: signal<string>('') };
     TestBed.configureTestingModule({
       providers: [
         {
@@ -68,15 +59,12 @@ describe('ImageLibraryService', () => {
             patch: patchSpy,
           } as Partial<EditorElementsStateService>,
         },
-        { provide: EditorSessionService, useValue: session },
         ImageLibraryService,
       ],
     });
     svc = TestBed.inject(ImageLibraryService);
     selection = TestBed.inject(EditorSelectionService);
     elsState = TestBed.inject(EditorElementsStateService);
-    session.tid.set('t1');
-    session.pid.set('p1');
     selection.setPrimary('img-1');
     fetchSpy = spyOn(globalThis, 'fetch');
   });
@@ -194,9 +182,7 @@ describe('ImageLibraryService', () => {
       expect(init.body).toContain('api.unsplash.com/photos/a/download');
 
       expect(patchSpy).toHaveBeenCalledTimes(1);
-      const [tid, pid, id, patch] = patchSpy.calls.mostRecent().args;
-      expect(tid).toBe('t1');
-      expect(pid).toBe('p1');
+      const [id, patch] = patchSpy.calls.mostRecent().args;
       expect(id).toBe('img-1');
       expect(patch.data.image.src).toBe('https://images.unsplash.com/a-regular');
       expect(patch.data.image.photographer).toBe('Jane Doe');
@@ -215,12 +201,6 @@ describe('ImageLibraryService', () => {
     it('is a no-op when the selected element is not an image', async () => {
       selection.setPrimary('non-image-el');
       // getById returns undefined for anything other than 'img-1'
-      await svc.applyToSelected(photo('a'));
-      expect(patchSpy).not.toHaveBeenCalled();
-    });
-
-    it('is a no-op when tid/pid are missing', async () => {
-      session.tid.set('');
       await svc.applyToSelected(photo('a'));
       expect(patchSpy).not.toHaveBeenCalled();
     });

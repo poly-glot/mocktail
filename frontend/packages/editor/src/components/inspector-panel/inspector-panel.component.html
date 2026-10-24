@@ -104,12 +104,12 @@
         <div class="field">
           <label>Heading level</label>
           <div class="level-row">
-            @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+            @for (n of headingLevels; track n) {
               <button
                 type="button"
                 class="level-btn"
                 [class.active]="(s.level ?? 1) === n"
-                (click)="onHeadingLevel(n.toString())"
+                (click)="onHeadingLevel(n)"
                 [attr.data-testid]="'level-' + n"
               >
                 H{{ n }}

@@ -277,10 +277,7 @@ describe('InspectorPanelComponent', () => {
       'duplicateSelected',
       'deleteSelected',
     ]);
-    editorSvc.setHeadingLevel.and.returnValue(Promise.resolve());
-    editorSvc.setColor.and.returnValue(Promise.resolve());
-    editorSvc.clearColor.and.returnValue(Promise.resolve());
-    editorSvc.duplicateSelected.and.returnValue(Promise.resolve(null));
+    editorSvc.duplicateSelected.and.returnValue(null);
     editorSvc.deleteSelected.and.returnValue(Promise.resolve());
 
     inspSvc = jasmine.createSpyObj<EditorInspectorService>('EditorInspectorService', [
@@ -428,7 +425,7 @@ describe('InspectorPanelComponent', () => {
     ) as HTMLInputElement;
     input.value = 'Hello';
     input.dispatchEvent(new Event('input'));
-    expect(editorSvc.updateSelected).toHaveBeenCalledWith(TID, PID, { text: 'Hello' });
+    expect(editorSvc.updateSelected).toHaveBeenCalledWith({ text: 'Hello' });
   });
 
   it('parses and clamps numeric inputs before calling updateSelected', () => {
@@ -438,10 +435,10 @@ describe('InspectorPanelComponent', () => {
     ) as NodeListOf<HTMLInputElement>;
     inputs[0].value = '99';
     inputs[0].dispatchEvent(new Event('input'));
-    expect(editorSvc.updateSelected).toHaveBeenCalledWith(TID, PID, { x: 99 });
+    expect(editorSvc.updateSelected).toHaveBeenCalledWith({ x: 99 });
     inputs[3].value = '5';
     inputs[3].dispatchEvent(new Event('input'));
-    expect(editorSvc.updateSelected).toHaveBeenCalledWith(TID, PID, { h: 5 });
+    expect(editorSvc.updateSelected).toHaveBeenCalledWith({ h: 5 });
   });
 
   it('clamps width below 1 to 1, and rejects non-finite values', () => {
@@ -451,7 +448,7 @@ describe('InspectorPanelComponent', () => {
     ) as NodeListOf<HTMLInputElement>;
     inputs[2].value = '-500';
     inputs[2].dispatchEvent(new Event('input'));
-    expect(editorSvc.updateSelected).toHaveBeenCalledWith(TID, PID, { w: 1 });
+    expect(editorSvc.updateSelected).toHaveBeenCalledWith({ w: 1 });
     editorSvc.updateSelected.calls.reset();
     inputs[2].value = '';
     inputs[2].dispatchEvent(new Event('input'));
@@ -461,16 +458,16 @@ describe('InspectorPanelComponent', () => {
   it('normalizes rotation values into [0, 360) before calling updateSelected', () => {
     setSelected(makeEl({ id: 'a', type: 'rect' }));
     cmp.onNumber('rotation', '450');
-    expect(editorSvc.updateSelected).toHaveBeenCalledWith(TID, PID, { rotation: 90 });
+    expect(editorSvc.updateSelected).toHaveBeenCalledWith({ rotation: 90 });
     cmp.onNumber('rotation', '-30');
-    expect(editorSvc.updateSelected).toHaveBeenCalledWith(TID, PID, { rotation: 330 });
+    expect(editorSvc.updateSelected).toHaveBeenCalledWith({ rotation: 330 });
   });
 
   it('calls setHeadingLevel on level button click', () => {
     setSelected(makeEl({ id: 'a', type: 'heading', level: 1 }));
     const btn = fixture.nativeElement.querySelector('[data-testid="level-3"]') as HTMLElement;
     btn.click();
-    expect(editorSvc.setHeadingLevel).toHaveBeenCalledWith(TID, PID, '3');
+    expect(editorSvc.setHeadingLevel).toHaveBeenCalledWith(3);
   });
 
   it('calls setColor when preset swatch is clicked', () => {
@@ -479,21 +476,21 @@ describe('InspectorPanelComponent', () => {
       '[data-testid="preset-ef4444"]',
     ) as HTMLElement;
     preset.click();
-    expect(editorSvc.setColor).toHaveBeenCalledWith(TID, PID, '#ef4444');
+    expect(editorSvc.setColor).toHaveBeenCalledWith('#ef4444');
   });
 
   it('calls clearColor when clear button is clicked', () => {
     setSelected(makeEl({ id: 'a', type: 'text', color: '#ff00aa' }));
     const clear = fixture.nativeElement.querySelector('.color-row .btn.ghost') as HTMLElement;
     clear.click();
-    expect(editorSvc.clearColor).toHaveBeenCalledWith(TID, PID);
+    expect(editorSvc.clearColor).toHaveBeenCalled();
   });
 
   it('calls clearColor when "no color" chip is clicked', () => {
     setSelected(makeEl({ id: 'a', type: 'text' }));
     const noneChip = fixture.nativeElement.querySelector('.palette-chip.none') as HTMLElement;
     noneChip.click();
-    expect(editorSvc.clearColor).toHaveBeenCalledWith(TID, PID);
+    expect(editorSvc.clearColor).toHaveBeenCalled();
   });
 
   it('calls setButtonVariant when a variant is clicked', () => {
@@ -502,14 +499,14 @@ describe('InspectorPanelComponent', () => {
       '[data-testid="btn-tertiary"]',
     ) as HTMLElement;
     tertiary.click();
-    expect(inspSvc.setButtonVariant).toHaveBeenCalledWith(TID, PID, 'tertiary');
+    expect(inspSvc.setButtonVariant).toHaveBeenCalledWith('tertiary');
   });
 
   it('calls setDividerOrientation when an orientation is clicked', () => {
     setSelected(makeEl({ id: 'a', type: 'divider' }));
     const vbtn = fixture.nativeElement.querySelector('[data-testid="divider-v"]') as HTMLElement;
     vbtn.click();
-    expect(inspSvc.setDividerOrientation).toHaveBeenCalledWith(TID, PID, 'v');
+    expect(inspSvc.setDividerOrientation).toHaveBeenCalledWith('v');
   });
 
   it('calls setDividerStroke (clamped + rounded) when stroke slider changes', () => {
@@ -519,13 +516,13 @@ describe('InspectorPanelComponent', () => {
     ) as HTMLInputElement;
     slider.value = '7';
     slider.dispatchEvent(new Event('input'));
-    expect(inspSvc.setDividerStroke).toHaveBeenCalledWith(TID, PID, 7);
+    expect(inspSvc.setDividerStroke).toHaveBeenCalledWith(7);
     slider.value = '9999';
     slider.dispatchEvent(new Event('input'));
-    expect(inspSvc.setDividerStroke).toHaveBeenCalledWith(TID, PID, 16);
+    expect(inspSvc.setDividerStroke).toHaveBeenCalledWith(16);
     slider.value = '0';
     slider.dispatchEvent(new Event('input'));
-    expect(inspSvc.setDividerStroke).toHaveBeenCalledWith(TID, PID, 1);
+    expect(inspSvc.setDividerStroke).toHaveBeenCalledWith(1);
   });
 
   it('hides stroke slider for non-divider elements', () => {
@@ -538,11 +535,11 @@ describe('InspectorPanelComponent', () => {
     (
       fixture.nativeElement.querySelector('[data-testid="divider-style-dashed"]') as HTMLElement
     ).click();
-    expect(inspSvc.setDividerStyle).toHaveBeenCalledWith(TID, PID, 'dashed');
+    expect(inspSvc.setDividerStyle).toHaveBeenCalledWith('dashed');
     (
       fixture.nativeElement.querySelector('[data-testid="divider-style-dotted"]') as HTMLElement
     ).click();
-    expect(inspSvc.setDividerStyle).toHaveBeenCalledWith(TID, PID, 'dotted');
+    expect(inspSvc.setDividerStyle).toHaveBeenCalledWith('dotted');
   });
 
   it('shows color picker for divider', () => {
@@ -571,7 +568,7 @@ describe('InspectorPanelComponent', () => {
     ) as HTMLElement;
     expect(onBtn.classList.contains('active')).toBe(true);
     offBtn.click();
-    expect(inspSvc.setChecked).toHaveBeenCalledWith(TID, PID, false);
+    expect(inspSvc.setChecked).toHaveBeenCalledWith(false);
     setSelected(makeEl({ id: 'a', type: 'toggle', data: { checked: false } }));
     expect(
       (
@@ -590,7 +587,7 @@ describe('InspectorPanelComponent', () => {
     expect(select).not.toBeNull();
     select.value = 'lg';
     select.dispatchEvent(new Event('change'));
-    expect(inspSvc.setFontSize).toHaveBeenCalledWith(TID, PID, 'lg');
+    expect(inspSvc.setFontSize).toHaveBeenCalledWith('lg');
     setSelected(makeEl({ id: 'a', type: 'heading' }));
     expect(fixture.nativeElement.querySelector('[data-testid="font-size"]')).toBeNull();
   });
@@ -601,7 +598,7 @@ describe('InspectorPanelComponent', () => {
     setSelected(makeEl({ id: 'a', type: 'icon' }));
     expect(fixture.nativeElement.querySelector('mt-icon-picker')).not.toBeNull();
     cmp.onIconName('heart');
-    expect(inspSvc.setIconName).toHaveBeenCalledWith(TID, PID, 'heart');
+    expect(inspSvc.setIconName).toHaveBeenCalledWith('heart');
   });
 
   it('shows Background color label for tag', () => {
@@ -618,7 +615,7 @@ describe('InspectorPanelComponent', () => {
     (
       fixture.nativeElement.querySelector('[data-testid="border-style-dotted"]') as HTMLElement
     ).click();
-    expect(inspSvc.setBorderStyle).toHaveBeenCalledWith(TID, PID, 'dotted');
+    expect(inspSvc.setBorderStyle).toHaveBeenCalledWith('dotted');
   });
 
   it('hides border style for non-bordered types (divider/text/button)', () => {
@@ -651,16 +648,16 @@ describe('InspectorPanelComponent', () => {
     ) as HTMLSelectElement;
     sel.value = 'Inter';
     sel.dispatchEvent(new Event('change'));
-    expect(inspSvc.setFontFamily).toHaveBeenCalledWith(TID, PID, 'Inter');
+    expect(inspSvc.setFontFamily).toHaveBeenCalledWith('Inter');
     sel.value = '';
     sel.dispatchEvent(new Event('change'));
-    expect(inspSvc.setFontFamily).toHaveBeenCalledWith(TID, PID, null);
+    expect(inspSvc.setFontFamily).toHaveBeenCalledWith(null);
     (fixture.nativeElement.querySelector('[data-testid="align-right"]') as HTMLElement).click();
-    expect(inspSvc.setTextAlign).toHaveBeenCalledWith(TID, PID, 'right');
+    expect(inspSvc.setTextAlign).toHaveBeenCalledWith('right');
     (fixture.nativeElement.querySelector('[data-testid="text-italic"]') as HTMLElement).click();
-    expect(inspSvc.toggleItalic).toHaveBeenCalledWith(TID, PID);
+    expect(inspSvc.toggleItalic).toHaveBeenCalled();
     (fixture.nativeElement.querySelector('[data-testid="text-underline"]') as HTMLElement).click();
-    expect(inspSvc.toggleUnderline).toHaveBeenCalledWith(TID, PID);
+    expect(inspSvc.toggleUnderline).toHaveBeenCalled();
   });
 
   it('calls duplicateSelected and deleteSelected on action buttons', () => {
@@ -670,7 +667,7 @@ describe('InspectorPanelComponent', () => {
     ) as NodeListOf<HTMLElement>;
     buttons[0].click();
     buttons[1].click();
-    expect(editorSvc.duplicateSelected).toHaveBeenCalledWith(TID, PID);
+    expect(editorSvc.duplicateSelected).toHaveBeenCalled();
     expect(editorSvc.deleteSelected).toHaveBeenCalledWith(TID, PID);
   });
 
@@ -707,7 +704,7 @@ describe('InspectorPanelComponent', () => {
     );
     const btn = fixture.nativeElement.querySelector('[data-testid="image-remove"]') as HTMLElement;
     btn.click();
-    expect(inspSvc.removeImage).toHaveBeenCalledWith(TID, PID);
+    expect(inspSvc.removeImage).toHaveBeenCalled();
   });
 
   it('forwards gridConfigChange via session.setGridConfig when nothing selected', () => {

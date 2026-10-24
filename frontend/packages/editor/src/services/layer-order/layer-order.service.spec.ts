@@ -21,9 +21,6 @@ function el(id: string, zIndex: number, overrides: Partial<IWireElement> = {}): 
 }
 
 describe('EditorLayerOrderService', () => {
-  const TID = 't';
-  const PID = 'p';
-
   let svc: EditorLayerOrderService;
   let state: EditorElementsStateService;
   let sel: EditorSelectionService;
@@ -61,7 +58,7 @@ describe('EditorLayerOrderService', () => {
     it('raises the element zIndex above the current max and closes the context menu', async () => {
       state.list.set([el('a', 1), el('b', 3), el('c', 2)]);
       ctx.openAt(0, 0, 'a');
-      await svc.bringToFront(TID, PID, 'a');
+      await svc.bringToFront('a');
       expect(zOf('a')).toBe(4);
       expect(ctx.menu()).toBeNull();
     });
@@ -69,13 +66,13 @@ describe('EditorLayerOrderService', () => {
     it('falls back to the current selection when no id is passed', async () => {
       state.list.set([el('a', 1), el('b', 3)]);
       sel.setPrimary('a');
-      await svc.bringToFront(TID, PID);
+      await svc.bringToFront();
       expect(zOf('a')).toBe(4);
     });
 
     it('is a no-op when nothing is selected and no id is passed', async () => {
       state.list.set([el('a', 1)]);
-      await svc.bringToFront(TID, PID);
+      await svc.bringToFront();
       expect(collab.sendEdit).not.toHaveBeenCalled();
     });
   });
@@ -83,7 +80,7 @@ describe('EditorLayerOrderService', () => {
   describe('sendToBack', () => {
     it('lowers the element zIndex below the current min', async () => {
       state.list.set([el('a', 2), el('b', 3), el('c', 1)]);
-      await svc.sendToBack(TID, PID, 'a');
+      await svc.sendToBack('a');
       expect(zOf('a')).toBe(0);
     });
   });
@@ -91,19 +88,19 @@ describe('EditorLayerOrderService', () => {
   describe('bringForward', () => {
     it('moves the element one step above the next element in z-order', async () => {
       state.list.set([el('a', 1), el('b', 2), el('c', 3)]);
-      await svc.bringForward(TID, PID, 'a');
+      await svc.bringForward('a');
       expect(zOf('a')).toBe(3);
     });
 
     it('is a no-op when the element is already at the top', async () => {
       state.list.set([el('a', 1), el('b', 2)]);
-      await svc.bringForward(TID, PID, 'b');
+      await svc.bringForward('b');
       expect(collab.sendEdit).not.toHaveBeenCalled();
     });
 
     it('is a no-op when the element does not exist', async () => {
       state.list.set([el('a', 1)]);
-      await svc.bringForward(TID, PID, 'missing');
+      await svc.bringForward('missing');
       expect(collab.sendEdit).not.toHaveBeenCalled();
     });
   });
@@ -111,13 +108,13 @@ describe('EditorLayerOrderService', () => {
   describe('sendBackward', () => {
     it('moves the element one step below the previous element in z-order', async () => {
       state.list.set([el('a', 1), el('b', 2), el('c', 3)]);
-      await svc.sendBackward(TID, PID, 'c');
+      await svc.sendBackward('c');
       expect(zOf('c')).toBe(1);
     });
 
     it('is a no-op when the element is already at the bottom', async () => {
       state.list.set([el('a', 1), el('b', 2)]);
-      await svc.sendBackward(TID, PID, 'a');
+      await svc.sendBackward('a');
       expect(collab.sendEdit).not.toHaveBeenCalled();
     });
   });
@@ -125,19 +122,19 @@ describe('EditorLayerOrderService', () => {
   describe('toggleLock', () => {
     it('flips the locked flag on the target', async () => {
       state.list.set([el('a', 1, { locked: false } as Partial<IWireElement>)]);
-      await svc.toggleLock(TID, PID, 'a');
+      await svc.toggleLock('a');
       expect(state.getById('a')?.locked).toBeTrue();
     });
 
     it('unlocks a previously-locked element', async () => {
       state.list.set([el('a', 1, { locked: true } as Partial<IWireElement>)]);
-      await svc.toggleLock(TID, PID, 'a');
+      await svc.toggleLock('a');
       expect(state.getById('a')?.locked).toBeFalse();
     });
 
     it('is a no-op when the element does not exist', async () => {
       state.list.set([el('a', 1)]);
-      await svc.toggleLock(TID, PID, 'missing');
+      await svc.toggleLock('missing');
       expect(collab.sendEdit).not.toHaveBeenCalled();
     });
   });
@@ -145,19 +142,19 @@ describe('EditorLayerOrderService', () => {
   describe('reorderLayer', () => {
     it('is a no-op when fromId === toId', async () => {
       state.list.set([el('a', 1), el('b', 2)]);
-      await svc.reorderLayer(TID, PID, 'a', 'a', 'above');
+      await svc.reorderLayer('a', 'a', 'above');
       expect(collab.sendEdit).not.toHaveBeenCalled();
     });
 
     it('is a no-op when the target does not exist', async () => {
       state.list.set([el('a', 1)]);
-      await svc.reorderLayer(TID, PID, 'a', 'missing', 'above');
+      await svc.reorderLayer('a', 'missing', 'above');
       expect(collab.sendEdit).not.toHaveBeenCalled();
     });
 
     it('moves "a" above "c" and compacts zIndexes to a contiguous 1..N', async () => {
       state.list.set([el('a', 1), el('b', 2), el('c', 3)]);
-      await svc.reorderLayer(TID, PID, 'a', 'c', 'above');
+      await svc.reorderLayer('a', 'c', 'above');
       expect(zOf('b')).toBe(1);
       expect(zOf('c')).toBe(2);
       expect(zOf('a')).toBe(3);
@@ -165,7 +162,7 @@ describe('EditorLayerOrderService', () => {
 
     it('moves "c" below "a" and compacts zIndexes', async () => {
       state.list.set([el('a', 1), el('b', 2), el('c', 3)]);
-      await svc.reorderLayer(TID, PID, 'c', 'a', 'below');
+      await svc.reorderLayer('c', 'a', 'below');
       expect(zOf('c')).toBe(1);
       expect(zOf('a')).toBe(2);
       expect(zOf('b')).toBe(3);
@@ -173,7 +170,7 @@ describe('EditorLayerOrderService', () => {
 
     it('forwards one sendEdit per changed element through the collab proxy and flushes', async () => {
       state.list.set([el('a', 1), el('b', 2), el('c', 3)]);
-      await svc.reorderLayer(TID, PID, 'a', 'c', 'above');
+      await svc.reorderLayer('a', 'c', 'above');
       const ids = collab.sendEdit.calls
         .allArgs()
         .map((a) => a[0] as string)

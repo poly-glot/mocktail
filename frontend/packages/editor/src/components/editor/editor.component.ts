@@ -73,7 +73,7 @@ import { PeerInitialsPipe } from '../../pipes/peer-initials.pipe';
 import { TransformForPipe } from '../../pipes/transform-for.pipe';
 import { GridOverlayComponent } from '../grid-overlay/grid-overlay.component';
 import { ImageLibraryPanelComponent } from '../image-library-panel/image-library-panel.component';
-import { IPaletteItem, PALETTES, PaletteComponent } from '../palette/palette.component';
+import { IPaletteItem, PALETTE_ITEM_BY_TYPE, PaletteComponent } from '../palette/palette.component';
 import { IReorderEvent, LayersPanelComponent } from '../layers-panel/layers-panel.component';
 import { InspectorPanelComponent } from '../inspector-panel/inspector-panel.component';
 import {
@@ -363,8 +363,7 @@ export class EditorComponent implements OnInit {
     const raw = fromTransfer || this._pendingDropType;
     if (!raw) return;
     const type = raw as ElementType;
-    const preset = PALETTES.flatMap((p) => p.items).find((i) => i.type === type);
-    if (!preset) {
+    if (!PALETTE_ITEM_BY_TYPE.has(type)) {
       this._pendingDropType = null;
       return;
     }
@@ -451,8 +450,8 @@ export class EditorComponent implements OnInit {
     return this._editor.deleteSelected(this.tid(), this.pid());
   }
 
-  public async duplicateSelected(): Promise<void> {
-    await this._editor.duplicateSelected(this.tid(), this.pid());
+  public duplicateSelected(): void {
+    this._editor.duplicateSelected();
   }
 
   public copySelected(): void {
@@ -472,44 +471,43 @@ export class EditorComponent implements OnInit {
     this._ctxMenu.close();
   }
 
-  public bringToFront(elId?: string): Promise<void> {
-    return this._layerOrder.bringToFront(this.tid(), this.pid(), elId);
+  public bringToFront(elId?: string): void {
+    this._layerOrder.bringToFront(elId);
   }
 
-  public sendToBack(elId?: string): Promise<void> {
-    return this._layerOrder.sendToBack(this.tid(), this.pid(), elId);
+  public sendToBack(elId?: string): void {
+    this._layerOrder.sendToBack(elId);
   }
 
-  public bringForward(elId?: string): Promise<void> {
-    return this._layerOrder.bringForward(this.tid(), this.pid(), elId);
+  public bringForward(elId?: string): void {
+    this._layerOrder.bringForward(elId);
   }
 
-  public sendBackward(elId?: string): Promise<void> {
-    return this._layerOrder.sendBackward(this.tid(), this.pid(), elId);
+  public sendBackward(elId?: string): void {
+    this._layerOrder.sendBackward(elId);
   }
 
-  public toggleLock(elId?: string): Promise<void> {
-    return this._layerOrder.toggleLock(this.tid(), this.pid(), elId);
+  public toggleLock(elId?: string): void {
+    this._layerOrder.toggleLock(elId);
   }
 
-  public reorderLayer(fromId: string, toId: string, position: 'above' | 'below'): Promise<void> {
-    return this._layerOrder.reorderLayer(this.tid(), this.pid(), fromId, toId, position);
+  public reorderLayer(fromId: string, toId: string, position: 'above' | 'below'): void {
+    this._layerOrder.reorderLayer(fromId, toId, position);
   }
 
   public setLeftPanel(panel: 'components' | 'symbols' | 'images'): void {
     this._panels.setLeftPanel(panel);
   }
 
-  public async onLayerReorder(ev: IReorderEvent): Promise<void> {
-    await this.reorderLayer(ev.fromId, ev.toId, ev.position);
+  public onLayerReorder(ev: IReorderEvent): void {
+    this.reorderLayer(ev.fromId, ev.toId, ev.position);
   }
 
-  public async pasteClipboard(): Promise<void> {
+  public pasteClipboard(): void {
     const src = this._clipboard.peek();
-    if (!src) return;
     const pageId = this.activePageId();
-    if (!pageId) return;
-    await this._editor.paste(this.tid(), this.pid(), pageId, src);
+    if (!src || !pageId) return;
+    this._editor.paste(pageId, src);
   }
 
   public toggleGrid(): void {
@@ -577,12 +575,8 @@ export class EditorComponent implements OnInit {
     toggleRight: () => this.toggleRight(),
     toggleGrid: () => this.toggleGrid(),
     copySelected: () => this.copySelected(),
-    pasteClipboard: () => {
-      void this.pasteClipboard();
-    },
-    duplicateSelected: () => {
-      void this.duplicateSelected();
-    },
+    pasteClipboard: () => this.pasteClipboard(),
+    duplicateSelected: () => this.duplicateSelected(),
     deleteSelected: () => {
       void this.deleteSelected();
     },

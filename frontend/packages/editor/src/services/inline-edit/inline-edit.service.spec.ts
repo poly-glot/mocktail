@@ -23,9 +23,6 @@ describe('EditorInlineEditService', () => {
   let patchSpy: jasmine.Spy;
   let defaultTextForSpy: jasmine.Spy;
 
-  const TID = 't';
-  const PID = 'p';
-
   beforeEach(() => {
     patchSpy = jasmine.createSpy('patch').and.resolveTo(undefined);
     defaultTextForSpy = jasmine.createSpy('defaultTextFor').and.returnValue(undefined);
@@ -138,7 +135,7 @@ describe('EditorInlineEditService', () => {
       const stopSpy = spyOn(svc, 'stop').and.callThrough();
       const element = el('a', { text: 'hi' });
       host.innerText = 'ignored';
-      svc.commit(host, element, false, TID, PID);
+      svc.commit(host, element, false);
       expect(stopSpy).not.toHaveBeenCalled();
       expect(patchSpy).not.toHaveBeenCalled();
     });
@@ -150,7 +147,7 @@ describe('EditorInlineEditService', () => {
         host.innerText = 'user was typing';
         const stopSpy = spyOn(svc, 'stop').and.callThrough();
 
-        svc.commit(host, element, true, TID, PID);
+        svc.commit(host, element, true);
 
         expect(stopSpy).toHaveBeenCalled();
         expect(host.innerText).toBe('original');
@@ -163,7 +160,7 @@ describe('EditorInlineEditService', () => {
         svc.begin('a');
         host.innerText = 'typed';
 
-        svc.commit(host, element, true, TID, PID);
+        svc.commit(host, element, true);
 
         expect(defaultTextForSpy).toHaveBeenCalledWith('heading');
         expect(host.innerText).toBe('Heading');
@@ -176,7 +173,7 @@ describe('EditorInlineEditService', () => {
         svc.begin('a');
         host.innerText = 'typed';
 
-        svc.commit(host, element, true, TID, PID);
+        svc.commit(host, element, true);
 
         expect(host.innerText).toBe('');
         expect(patchSpy).not.toHaveBeenCalled();
@@ -193,10 +190,10 @@ describe('EditorInlineEditService', () => {
           value: 'line1\r\nline2',
         });
 
-        svc.commit(host, element, false, TID, PID);
+        svc.commit(host, element, false);
 
         expect(patchSpy).toHaveBeenCalledTimes(1);
-        expect(patchSpy).toHaveBeenCalledWith(TID, PID, 'a', { text: 'line1\nline2' });
+        expect(patchSpy).toHaveBeenCalledWith('a', { text: 'line1\nline2' });
         expect(svc.editingId()).toBeNull();
       });
 
@@ -209,7 +206,7 @@ describe('EditorInlineEditService', () => {
         });
         const stopSpy = spyOn(svc, 'stop').and.callThrough();
 
-        svc.commit(host, element, false, TID, PID);
+        svc.commit(host, element, false);
 
         expect(stopSpy).toHaveBeenCalled();
         expect(patchSpy).not.toHaveBeenCalled();
@@ -223,7 +220,7 @@ describe('EditorInlineEditService', () => {
           value: '',
         });
 
-        svc.commit(host, element, false, TID, PID);
+        svc.commit(host, element, false);
 
         expect(patchSpy).not.toHaveBeenCalled();
       });

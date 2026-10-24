@@ -12,25 +12,25 @@ export class EditorLayerOrderService {
   private readonly _ctxMenu = inject(EditorContextMenuService);
   private readonly _collab = inject(CollabService);
 
-  public async bringToFront(tid: string, pid: string, elId?: string): Promise<void> {
+  public bringToFront(elId?: string): void {
     const id = elId ?? this._sel.selectedId();
     if (!id) return;
     const zs = this._state.list().map((e) => e.zIndex);
     const max = zs.length ? Math.max(...zs) : 0;
-    await this._state.patch(tid, pid, id, { zIndex: max + 1 });
+    this._state.patch(id, { zIndex: max + 1 });
     this._ctxMenu.close();
   }
 
-  public async sendToBack(tid: string, pid: string, elId?: string): Promise<void> {
+  public sendToBack(elId?: string): void {
     const id = elId ?? this._sel.selectedId();
     if (!id) return;
     const zs = this._state.list().map((e) => e.zIndex);
     const min = zs.length ? Math.min(...zs) : 0;
-    await this._state.patch(tid, pid, id, { zIndex: min - 1 });
+    this._state.patch(id, { zIndex: min - 1 });
     this._ctxMenu.close();
   }
 
-  public async bringForward(tid: string, pid: string, elId?: string): Promise<void> {
+  public bringForward(elId?: string): void {
     const id = elId ?? this._sel.selectedId();
     if (!id) return;
     const el = this._state.getById(id);
@@ -40,11 +40,11 @@ export class EditorLayerOrderService {
       .filter((e) => e.zIndex > el.zIndex)
       .sort((a, b) => a.zIndex - b.zIndex)[0];
     if (!above) return;
-    await this._state.patch(tid, pid, id, { zIndex: above.zIndex + 1 });
+    this._state.patch(id, { zIndex: above.zIndex + 1 });
     this._ctxMenu.close();
   }
 
-  public async sendBackward(tid: string, pid: string, elId?: string): Promise<void> {
+  public sendBackward(elId?: string): void {
     const id = elId ?? this._sel.selectedId();
     if (!id) return;
     const el = this._state.getById(id);
@@ -54,26 +54,20 @@ export class EditorLayerOrderService {
       .filter((e) => e.zIndex < el.zIndex)
       .sort((a, b) => b.zIndex - a.zIndex)[0];
     if (!below) return;
-    await this._state.patch(tid, pid, id, { zIndex: below.zIndex - 1 });
+    this._state.patch(id, { zIndex: below.zIndex - 1 });
     this._ctxMenu.close();
   }
 
-  public async toggleLock(tid: string, pid: string, elId?: string): Promise<void> {
+  public toggleLock(elId?: string): void {
     const id = elId ?? this._sel.selectedId();
     if (!id) return;
     const el = this._state.getById(id);
     if (!el) return;
-    await this._state.patch(tid, pid, id, { locked: !el.locked });
+    this._state.patch(id, { locked: !el.locked });
     this._ctxMenu.close();
   }
 
-  public async reorderLayer(
-    _tid: string,
-    _pid: string,
-    fromId: string,
-    toId: string,
-    position: 'above' | 'below',
-  ): Promise<void> {
+  public reorderLayer(fromId: string, toId: string, position: 'above' | 'below'): void {
     if (fromId === toId) return;
     const prev = this._state.list();
     const target = prev.find((e) => e.id === toId);
