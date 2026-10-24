@@ -5,10 +5,6 @@
  *   { prompt, context? }
  *   → { elements: Element[], notes: string }
  *
- * POST /api/ai/review
- *   { elements: Element[] }
- *   → { findings: { severity, message, elementId? }[] }
- *
  * The system prompt teaches Gemini the Mocktail element schema so the model
  * only emits types the canvas can render. If GEMINI_API_KEY is missing the
  * route falls back to a deterministic rule-based generator — this keeps the
@@ -26,8 +22,6 @@ const GEMINI_URL =
 
 // ── Element schema (mirrors frontend canvas) ─────────────────────────
 //
-// Shared with the Angular editor. Keep this list in lock-step with
-// frontend/src/app/shared/element.ts — the AI relies on it.
 export const ELEMENT_TYPES = [
   "rect",
   "text",
@@ -454,75 +448,6 @@ ai.post("/generate", async (c) => {
     source: fromModel ? "gemini" : "fallback",
     model: fromModel ? GEMINI_MODEL : "rule-based",
   });
-});
-
-ai.post("/review", async (c) => {
-  const body = await c.req.json().catch(() => ({}));
-  const elements: WireframeElement[] = Array.isArray(body.elements)
-    ? body.elements
-    : [];
-  const findings: Array<
-    { severity: string; message: string; elementId?: string }
-  > = [];
-
-  // Rule-based a11y / heuristic review — runs regardless of Gemini.
-  for (const el of elements) {
-    if (el.type === "button" && !el.props?.text) {
-      findings.push({
-        severity: "error",
-        message: "Button is missing a text label.",
-        elementId: el.id,
-      });
-    }
-    if (el.type === "input" && !el.props?.placeholder) {
-      findings.push({
-        severity: "warn",
-        message: "Input has no placeholder — add one for clarity.",
-        elementId: el.id,
-      });
-    }
-    if (el.type === "image" && !el.props?.text) {
-      findings.push({
-        severity: "warn",
-        message: "Image is missing an alt description.",
-        elementId: el.id,
-      });
-    }
-    if (el.w < 24 || el.h < 16) {
-      findings.push({
-        severity: "warn",
-        message: "Element is below 24×16px — hard to hit on touch.",
-        elementId: el.id,
-      });
-    }
-  }
-
-  // Layout heuristics.
-  const buttons = elements.filter((e) => e.type === "button");
-  const primary = buttons.filter((e) => e.props?.variant === "solid");
-  if (buttons.length > 0 && primary.length === 0) {
-    findings.push({
-      severity: "info",
-      message:
-        "No primary (solid) button on this page — pick one to guide the user.",
-    });
-  }
-  if (primary.length > 1) {
-    findings.push({
-      severity: "warn",
-      message:
-        `${primary.length} primary buttons — typically one CTA per screen is clearest.`,
-    });
-  }
-
-  if (findings.length === 0) {
-    findings.push({
-      severity: "info",
-      message: "Looks clean — no heuristic issues flagged.",
-    });
-  }
-
-  return c.json({ findings });
 });
 
 ai.get("/healthz", (c) =>

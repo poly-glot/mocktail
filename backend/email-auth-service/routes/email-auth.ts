@@ -11,32 +11,15 @@ import {
   APP_DOMAIN,
   FROM_EMAIL,
   PROJECT_ID,
-  RATE_LIMIT_WINDOW,
   RESEND_API_KEY,
 } from "../config.ts";
+import { createRateLimiter } from "../services/rate-limit.ts";
 import { getAccessToken } from "../services/token.ts";
 import { buildSignInEmail } from "../templates/sign-in-email.ts";
 
 const emailAuth = new Hono();
 
-// ── Rate limiting (1 request per email per 60s) ─────────────────────
-
-type RateLimitEntry = { count: number; resetAt: number };
-const emailRateLimits = new Map<string, RateLimitEntry>();
-
-function checkRateLimit(email: string): number {
-  const now = Date.now();
-  const key = email.toLowerCase();
-  const entry = emailRateLimits.get(key);
-
-  if (!entry || now > entry.resetAt) {
-    emailRateLimits.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
-    return 0;
-  }
-  return Math.ceil((entry.resetAt - now) / 1000);
-}
-
-// ── Email validation ────────────────────────────────────────────────
+const retryAfterFor = createRateLimiter(1, 60_000);
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function isValidEmail(email: unknown): email is string {
@@ -58,7 +41,7 @@ emailAuth.post("/send-link", async (c) => {
     return c.json({ error: "Invalid email address" }, 400);
   }
 
-  const retryAfter = checkRateLimit(email);
+  const retryAfter = retryAfterFor(email.toLowerCase());
   if (retryAfter > 0) {
     return c.json(
       { error: "Please wait before requesting another link", retryAfter },
@@ -112,7 +95,7 @@ emailAuth.post("/send-link", async (c) => {
         from: FROM_EMAIL,
         to: [email],
         subject: "Sign in to Mocktail",
-        html: buildSignInEmail(signInLink, email),
+        html: buildSignInEmail(signInLink),
       }),
     });
 

@@ -1,21 +1,10 @@
-import {
-  GCP_METADATA_TOKEN_URL,
-  K_SERVICE,
-  TOKEN_CACHE_BUFFER,
-} from "../config.ts";
+const K_SERVICE = Deno.env.get("K_SERVICE");
+const GCP_METADATA_TOKEN_URL =
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token";
+const TOKEN_CACHE_BUFFER_MS = 60_000;
 
 let cached: { token: string; expiresAt: number } | null = null;
 
-/**
- * Fetches a Google access token for the attached service account.
- *
- * On Cloud Run the metadata server returns a token for the service's
- * runtime identity — which must have the "Service Account Token Creator"
- * and "Firebase Authentication Admin" roles to call sendOobCode.
- *
- * Off Cloud Run (local dev) this throws — the caller should handle that
- * path separately (or run the Firebase Auth emulator).
- */
 export async function getAccessToken(): Promise<string> {
   if (!K_SERVICE) {
     throw new Error(
@@ -23,7 +12,7 @@ export async function getAccessToken(): Promise<string> {
     );
   }
 
-  if (cached && cached.expiresAt > Date.now() + TOKEN_CACHE_BUFFER) {
+  if (cached && cached.expiresAt > Date.now() + TOKEN_CACHE_BUFFER_MS) {
     return cached.token;
   }
 
