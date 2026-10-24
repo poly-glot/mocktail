@@ -12,7 +12,7 @@
 //     frames between flushes. Arena-backed, reset on flush.
 //   - `tenant_id` is set at join time (first caller wins) and is needed to
 //     build the Firestore document path `tenants/{tid}/projects/{pid}/...`.
-//   - `last_edit_ns` / `last_flush_ns` feed the flush trigger in the reactor.
+//   - `last_flush_ns` (room) and `pending.last_edit_ns` feed the flush trigger.
 
 const std = @import("std");
 const pending_mod = @import("pending.zig");
@@ -67,7 +67,6 @@ pub const Room = struct {
     /// Merged-field buffer. Non-null once the room has seen any edit; stays
     /// null for broadcast-only rooms (no tenant -> no Firestore writes).
     pending: ?pending_mod.Pending = null,
-    last_edit_ns: i128 = 0,
     last_flush_ns: i128 = 0,
 
     pub fn key(self: *const Room) []const u8 {

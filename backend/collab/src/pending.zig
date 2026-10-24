@@ -60,7 +60,6 @@ pub const Pending = struct {
     /// mergeEdit). The flush turns these into Write.delete protobuf messages.
     deleted_ids: std.StringArrayHashMapUnmanaged(void) = .{},
     last_edit_ns: i128 = 0,
-    last_flush_ns: i128 = 0,
 
     pub fn init(allocator: std.mem.Allocator) Pending {
         return .{

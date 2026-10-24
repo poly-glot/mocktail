@@ -89,11 +89,7 @@ pub const Config = struct {
 
     fn parseBool(maybe: ?[]const u8) bool {
         const v = maybe orelse return false;
-        if (std.mem.eql(u8, v, "true")) return true;
-        if (std.mem.eql(u8, v, "1")) return true;
-        if (std.mem.eql(u8, v, "TRUE")) return true;
-        if (std.mem.eql(u8, v, "True")) return true;
-        return false;
+        return std.ascii.eqlIgnoreCase(v, "true") or std.mem.eql(u8, v, "1");
     }
 };
 
@@ -125,25 +121,6 @@ pub const Client = struct {
         return .{
             .{ .key = "x-goog-request-params", .value = self.config.routing_params },
         };
-    }
-
-    /// `/google.firestore.v1.Firestore/GetDocument`
-    /// `request` is a pre-encoded GetDocumentRequest protobuf.
-    pub fn getDocument(
-        self: *Client,
-        cq: *grpc.c.grpc_completion_queue,
-        request: []const u8,
-        arena: std.mem.Allocator,
-    ) grpc.GrpcError![]const u8 {
-        const md = self.routingMetadata();
-        return self.channel.callUnary(
-            cq,
-            "/google.firestore.v1.Firestore/GetDocument",
-            request,
-            arena,
-            30,
-            &md,
-        );
     }
 
     /// `/google.firestore.v1.Firestore/Commit`
